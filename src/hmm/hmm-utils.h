@@ -39,12 +39,16 @@ struct HTransducerConfig {
   /// not include self-loops.
   BaseFloat transition_scale;
 
+  /// wether making CTC decoding graph
+  bool ctc;
+
   HTransducerConfig():
-      transition_scale(1.0) { }
+      transition_scale(1.0), ctc(false) { }
 
   void Register (OptionsItf *opts) {
     opts->Register("transition-scale", &transition_scale,
                    "Scale of transition probs (relative to LM)");
+    opts->Register("ctc", &ctc, "Wether this is making CTC decoding graph.");
   }
 };
 
@@ -164,7 +168,7 @@ void AddSelfLoops(const TransitionModel &trans_model,
                   const std::vector<int32> &disambig_syms,  // used as a check only.
                   BaseFloat self_loop_scale,
                   bool reorder,  // true->dan-style, false->lukas-style.
-                  fst::VectorFst<fst::StdArc> *fst);
+                  fst::VectorFst<fst::StdArc> *fst, bool ctc = false);
 
 /**
   * Adds transition-probs, with the supplied

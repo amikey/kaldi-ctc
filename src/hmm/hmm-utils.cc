@@ -125,18 +125,26 @@ fst::VectorFst<fst::StdArc> *GetHmmAsFst(
         // log_prob is a negative number (or zero)...
         label = trans_id;
       }
-      // Will add probability-scale later (we may want to push first).
-      ans->AddArc(state_ids[hmm_state],
-                  Arc(label, label, Weight(-log_prob), state_ids[dest_state]));
+
+      if (config.ctc) {
+        ans->AddArc(state_ids[hmm_state],
+                    Arc(label, label, Weight::One(), state_ids[dest_state]));
+      } else {
+        // Will add probability-scale later (we may want to push first).
+        ans->AddArc(state_ids[hmm_state],
+                    Arc(label, label, Weight(-log_prob), state_ids[dest_state]));
+      }
     }
   }
 
   fst::RemoveEpsLocal(ans);  // this is safe and will not blow up.
 
-  // Now apply probability scale.
-  // We waited till after the possible weight-pushing steps,
-  // because weight-pushing needs "real" weights in order to work.
-  ApplyProbabilityScale(config.transition_scale, ans);
+  if (!config.ctc) {
+    // Now apply probability scale.
+    // We waited till after the possible weight-pushing steps,
+    // because weight-pushing needs "real" weights in order to work.
+    ApplyProbabilityScale(config.transition_scale, ans);
+  }
   if (cache != NULL)
     (*cache)[cache_index] = ans;
   return ans;
@@ -424,7 +432,8 @@ private:
 static void AddSelfLoopsBefore(const TransitionModel &trans_model,
                                const std::vector<int32> &disambig_syms,
                                BaseFloat self_loop_scale,
-                               fst::VectorFst<fst::StdArc> *fst) {
+                               fst::VectorFst<fst::StdArc> *fst,
+                               bool ctc = false) {
   using namespace fst;
   typedef StdArc Arc;
   typedef Arc::Label Label;
@@ -478,19 +487,26 @@ static void AddSelfLoopsBefore(const TransitionModel &trans_model,
       int32 trans_state = static_cast<int32>(state_in[s]);
       // First multiply all probabilities by "forward" probability.
       BaseFloat log_prob = trans_model.GetNonSelfLoopLogProb(trans_state);
-      fst->SetFinal(s, Times(fst->Final(s), Weight(-log_prob*self_loop_scale)));
-      for (MutableArcIterator<MutableFst<Arc> > aiter(fst, s);
-          !aiter.Done();
-          aiter.Next()) {
-        Arc arc = aiter.Value();
-        arc.weight = Times(arc.weight, Weight(-log_prob*self_loop_scale));
-        aiter.SetValue(arc);
+      if (!ctc) {
+        fst->SetFinal(s, Times(fst->Final(s), Weight(-log_prob*self_loop_scale)));
+        for (MutableArcIterator<MutableFst<Arc> > aiter(fst, s);
+            !aiter.Done();
+            aiter.Next()) {
+          Arc arc = aiter.Value();
+          arc.weight = Times(arc.weight, Weight(-log_prob*self_loop_scale));
+          aiter.SetValue(arc);
+        }
       }
+
       // Now add self-loop, if needed.
       int32 trans_id = trans_model.SelfLoopOf(trans_state);
       if (trans_id != 0) {  // has self-loop.
-        BaseFloat log_prob = trans_model.GetTransitionLogProb(trans_id);
-        fst->AddArc(s, Arc(trans_id, 0, Weight(-log_prob*self_loop_scale), s));
+        if (ctc) {
+          fst->AddArc(s, Arc(trans_id, 0, Weight::One(), s));
+        } else {
+          BaseFloat log_prob = trans_model.GetTransitionLogProb(trans_id);
+          fst->AddArc(s, Arc(trans_id, 0, Weight(-log_prob*self_loop_scale), s));
+        }
       }
     }
   }
@@ -504,7 +520,8 @@ static void AddSelfLoopsBefore(const TransitionModel &trans_model,
 static void AddSelfLoopsAfter(const TransitionModel &trans_model,
                               const std::vector<int32> &disambig_syms,
                               BaseFloat self_loop_scale,
-                              fst::VectorFst<fst::StdArc> *fst) {
+                              fst::VectorFst<fst::StdArc> *fst,
+                              bool ctc = false) {
   using namespace fst;
   typedef StdArc Arc;
   typedef Arc::Label Label;
@@ -520,16 +537,18 @@ static void AddSelfLoopsAfter(const TransitionModel &trans_model,
   for (StateId s = 0; s < num_states; s++) {
     int32 my_trans_state = f(kNoLabel);
     KALDI_ASSERT(my_trans_state == -1);
-    for (MutableArcIterator<VectorFst<Arc> > aiter(fst, s);
-         !aiter.Done();
-         aiter.Next()) {
-      Arc arc = aiter.Value();
-      if (my_trans_state == -1) my_trans_state = f(arc.ilabel);
-      else KALDI_ASSERT(my_trans_state == f(arc.ilabel));  // or MakeFollowingInputSymbolsSameClass failed.
-      if (my_trans_state > 0) {  // transition-id; multiply weight...
-        BaseFloat log_prob = trans_model.GetNonSelfLoopLogProb(my_trans_state);
-        arc.weight = Times(arc.weight, Weight(-log_prob*self_loop_scale));
-        aiter.SetValue(arc);
+    if (!ctc) {
+      for (MutableArcIterator<VectorFst<Arc> > aiter(fst, s);
+           !aiter.Done();
+           aiter.Next()) {
+        Arc arc = aiter.Value();
+        if (my_trans_state == -1) my_trans_state = f(arc.ilabel);
+        else KALDI_ASSERT(my_trans_state == f(arc.ilabel));  // or MakeFollowingInputSymbolsSameClass failed.
+        if (my_trans_state > 0) {  // transition-id; multiply weight...
+          BaseFloat log_prob = trans_model.GetNonSelfLoopLogProb(my_trans_state);
+          arc.weight = Times(arc.weight, Weight(-log_prob*self_loop_scale));
+          aiter.SetValue(arc);
+        }
       }
     }
     if (fst->Final(s) != Weight::Zero()) {
@@ -539,8 +558,12 @@ static void AddSelfLoopsAfter(const TransitionModel &trans_model,
       // a transition-state;  add self-loop, if it has one.
       int32 trans_id = trans_model.SelfLoopOf(my_trans_state);
       if (trans_id != 0) {  // has self-loop.
-        BaseFloat log_prob = trans_model.GetTransitionLogProb(trans_id);
-        fst->AddArc(s, Arc(trans_id, 0, Weight(-log_prob*self_loop_scale), s));
+        if (ctc) {
+          fst->AddArc(s, Arc(trans_id, 0, Weight::One(), s));
+        } else {
+          BaseFloat log_prob = trans_model.GetTransitionLogProb(trans_id);
+          fst->AddArc(s, Arc(trans_id, 0, Weight(-log_prob*self_loop_scale), s));
+        }
       }
     }
   }
@@ -550,12 +573,13 @@ void AddSelfLoops(const TransitionModel &trans_model,
                   const std::vector<int32> &disambig_syms,
                   BaseFloat self_loop_scale,
                   bool reorder,  // true->dan-style, false->lukas-style.
-                  fst::VectorFst<fst::StdArc> *fst) {
+                  fst::VectorFst<fst::StdArc> *fst,
+                  bool ctc) {
   KALDI_ASSERT(fst->Start() != fst::kNoStateId);
   if (reorder)
-    AddSelfLoopsBefore(trans_model, disambig_syms, self_loop_scale, fst);
+    AddSelfLoopsBefore(trans_model, disambig_syms, self_loop_scale, fst, ctc);
   else
-    AddSelfLoopsAfter(trans_model, disambig_syms, self_loop_scale, fst);
+    AddSelfLoopsAfter(trans_model, disambig_syms, self_loop_scale, fst, ctc);
 }
 
 // IsReordered returns true if the transitions were possibly reordered.  This reordering
