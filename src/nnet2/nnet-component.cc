@@ -26,6 +26,7 @@
 #include "nnet2/nnet-component.h"
 #include "nnet2/nnet-precondition.h"
 #include "nnet2/nnet-precondition-online.h"
+#include "nnet2/nnet-cudnn-component.h"
 #include "util/stl-utils.h"
 #include "util/text-utils.h"
 #include "util/kaldi-io.h"
@@ -108,7 +109,14 @@ Component* Component::NewComponentOfType(const std::string &component_type) {
     ans = new Convolutional1dComponent();
   } else if (component_type == "MaxpoolingComponent") {
     ans = new MaxpoolingComponent();
+  } 
+#if HAVE_CUDA == 1 && HAVE_CUDNN == 1
+  else if (component_type == "CuDNNRecurrentComponent") {
+    ans = new CuDNNRecurrentComponent();
+  } else if (component_type == "ClipGradientComponent") {
+    ans = new ClipGradientComponent();
   }
+#endif  // HAVE_CUDA && HAVE_CUDNN
   return ans;
 }
 
