@@ -61,6 +61,9 @@ fi
 MATHLIB='ATLAS'
 ATLASROOT=`rel2abs ../tools/ATLAS/`
 FSTROOT=`rel2abs ../tools/openfst`
+CUDNNROOT="/usr/local/cuda"
+WARPCTCROOT=`rel2abs ../tools/warp-ctc/`;
+
 
 # Avoid using any variables that are set in the shell.
 unset MKLROOT
@@ -72,7 +75,7 @@ function usage {
   echo 'Usage: ./configure [--static|--shared] [--threaded-atlas={yes|no}] [--atlas-root=ATLASROOT] [--fst-root=FSTROOT]
   [--openblas-root=OPENBLASROOOT] [--clapack-root=CLAPACKROOT] [--mkl-root=MKLROOT] [--mkl-libdir=MKLLIBDIR]
   [--omp-libdir=OMPDIR] [--static-fst={yes|no}] [--static-math={yes|no}] [--threaded-math={yes|no}] [--mathlib=ATLAS|MKL|CLAPACK|OPENBLAS]
-  [--use-cuda={yes|no}] [--cudatk-dir=CUDATKDIR][--mkl-threading=sequential|iomp|tbb|gomp]';
+  [--use-cuda={yes|no}] [--cudatk-dir=CUDATKDIR] [--cudnn-root=CUDNNROOT] [--warpctc-root=WARPCTCROOT] [--mkl-threading=sequential|iomp|tbb|gomp]';
 }
 
 threaded_atlas=false #  By default, use the un-threaded version of ATLAS.
@@ -182,6 +185,12 @@ do
   --cudatk-dir=*)
     CUDATKDIR=`read_dirname $1`;
     shift ;; #CUDA is used in src/cudamatrix and src/nnet{,bin} only
+  --cudnn-root=*)
+    CUDNNROOT=`read_dirname $1`;
+    shift ;; #CUDNN is used in src/cudamatrix and src/nnet{,bin} only
+  --warpctc-root=*)
+    WARPCTCROOT=`read_dirname $1`;
+    shift ;;
   *)  echo "Unknown argument: $1, exiting"; usage; exit 1 ;;
   esac
 done
@@ -230,6 +239,9 @@ function check_for_slow_expf {
 
 
 function exit_success {
+  echo "Checking warp-ctc"
+  linux_configure_warpctc || exit 1;
+
   check_for_bad_gcc;
   check_for_slow_expf;
   echo "SUCCESS"
@@ -436,6 +448,14 @@ function configure_cuda {
     echo "#Next section enables CUDA for compilation" >> kaldi.mk
     echo CUDA = true >> kaldi.mk
     echo CUDATKDIR = $CUDATKDIR >> kaldi.mk
+    # check for cuDNN library in the system
+    if [ $CUDNNROOT ]; then
+      if [ ! -f $CUDNNROOT/include/cudnn.h ]; then
+        failure "Could not find file $CUDNNROOT/include/cudnn.h:
+        you may not have installed cuDNN. See ../tools/INSTALL"
+      fi
+      echo CUDNNROOT = $CUDNNROOT >> kaldi.mk
+    fi
 
     # Determine 'CUDA_ARCH',
     CUDA_VERSION=$($CUDATKDIR/bin/nvcc -V | tr '.,' '_ ' | awk '/release/{sub(/.*release/,""); print $1;}') # MAJOR_MINOR,
@@ -457,8 +477,12 @@ function configure_cuda {
     if [ "`uname -m`" == "x86_64" ]; then
       if [ "`uname`" == "Darwin" ]; then
         sed 's/lib64/lib/g' < makefiles/cuda_64bit.mk >> kaldi.mk
+        sed 's/lib64/lib/g' < makefiles/cudnn_64bit.mk >> kaldi.mk
       else
         cat makefiles/cuda_64bit.mk >> kaldi.mk
+        if [ $CUDNNROOT ]; then
+          cat makefiles/cudnn_64bit.mk >> kaldi.mk
+        fi
       fi
     else
       cat makefiles/cuda_32bit.mk >> kaldi.mk
@@ -470,6 +494,57 @@ function configure_cuda {
     echo "only relevant for neural net experiments"
   fi
 }
+
+
+function linux_configure_warpctc {
+  #check whether the user has called tools/extras/install_warpctc.sh or not
+  [ ! -z "$WARPCTCROOT" ] || WARPCTCROOT=`pwd`/../tools/warp-ctc
+  [ ! -z "$WARPCTCLIBDIR" ] || WARPCTCLIBDIR="$WARPCTCROOT"/build
+  [ ! -z "$WARPCTCINCLUDEDIR" ] || WARPCTCINCLUDEDIR="$WARPCTCROOT"/include
+  if ! $use_cuda;then
+    echo "Error: must use cuda when use warp-ctc."
+    exit 1;
+  fi
+  static_warpctc=$1
+  if [ "foo"$static_warpctc == "foo" ]; then
+    static_warpctc=true
+  fi
+
+  if $static_warpctc; then
+    spx_type=a
+  else
+    spx_type=so
+  fi
+  if [ ! -f "$WARPCTCLIBDIR/libwarpctc.${spx_type}" ];then
+    echo "Error: configuring Kaldi not to link with warp-ctc"
+    exit 1;
+  fi
+
+  if [ -f $WARPCTCINCLUDEDIR/ctc.h ]; then
+    echo WARPCTC_FLAGS = -DHAVE_WARPCTC=1 -I${WARPCTCINCLUDEDIR} >> kaldi.mk
+
+    if $static_warpctc; then
+      if [ "`uname`" == "Darwin"  ]; then
+        echo WARPCTC_LDLIBS = $WARPCTCLIBDIR/libwarpctc.a >>kaldi.mk
+      else
+        echo WARPCTC_LDLIBS = $WARPCTCLIBDIR/libwarpctc.a -fopenmp >>kaldi.mk
+      fi
+    else
+      echo WARPCTC_LDLIBS = -lwarpctc >> kaldi.mk
+      if [ "`uname`" == "Darwin"  ]; then
+        echo WARPCTC_LDFLAGS = -Wl,-rpath,${WARPCTCLIBDIR} >> kaldi.mk
+      else
+        echo WARPCTC_LDFLAGS = -Wl,-rpath,${WARPCTCLIBDIR} -fopenmp >> kaldi.mk
+      fi
+    fi
+
+    echo "Successfully configured with warp-ctc at $WARPCTCROOT, (static=[$static_warpctc])"
+  else
+    echo "Error: warp-ctc not be found. Run tools/extras/install_warpctc.sh first."
+    exit 1;
+  fi
+}
+
 
 function linux_configure_speex {
   #check whether the user has called tools/extras/install_speex.sh or not
@@ -880,7 +955,6 @@ echo "Doing OS specific configurations ..."
 # which crashes on Darwin. Also the linear algebra libraries on Macs are
 # used differently (through the Accelerate framework) than on Linux.
 if [ "`uname`" == "Darwin"  ]; then
- $use_cuda && configure_cuda
   echo "On Darwin: checking for Accelerate framework ..."
   if [ ! -e /System/Library/Frameworks/Accelerate.framework ]; then
     failure "Need the Accelerate.framework to compile on Darwin."
@@ -926,6 +1000,7 @@ if [ "`uname`" == "Darwin"  ]; then
   else
     failure "OS X version '$osx_ver' not supported"
   fi
+  $use_cuda && configure_cuda
   echo "Configuration succeeded for platform Darwin."
   exit_success;
 fi
