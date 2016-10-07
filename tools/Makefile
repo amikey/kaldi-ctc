@@ -27,7 +27,7 @@ else
   endif
 endif
 
-all: check_required_programs sph2pipe atlas sclite openfst
+all: check_required_programs sph2pipe atlas sclite openfst warpctc
 	@echo -e "\n\n"
 	@echo "Warning: IRSTLM is not installed by default anymore. If you need IRSTLM"
 	@echo "Warning: use the script extras/install_irstlm.sh"
@@ -173,4 +173,5 @@ openblas_compiled:
 	# $(MAKE) PREFIX=`pwd`/OpenBLAS/install FC=gfortran $(fortran_opt) DEBUG=1 USE_THREAD=1 NUM_THREADS=64 -C OpenBLAS all install
 	$(MAKE) PREFIX=`pwd`/OpenBLAS/install FC=gfortran $(fortran_opt) DEBUG=1 USE_THREAD=0 -C OpenBLAS all install
 
-
+warpctc:
+	extras/install_warp_ctc.sh
