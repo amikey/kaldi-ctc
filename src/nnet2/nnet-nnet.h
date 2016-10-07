@@ -75,7 +75,9 @@ class Nnet {
   /// Sets the c'th component to "component", taking ownership of the pointer
   /// and deleting the corresponding one that we own.
   void SetComponent(int32 c, Component *component);
-  
+
+  void SetMiniBatch(int32 mini_batch) const;
+
   /// Returns the left-context summed over all the Components... this is the
   /// entire left-context in frames, that the network requires.
   int32 LeftContext() const;

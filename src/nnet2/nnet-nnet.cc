@@ -22,6 +22,7 @@
 #include <set>
 #include <string>
 #include "nnet2/nnet-nnet.h"
+#include "nnet2/nnet-cudnn-component.h"
 #include "util/stl-utils.h"
 
 namespace kaldi {
@@ -38,6 +39,15 @@ int32 Nnet::InputDim() const {
   return components_.front()->InputDim();
 }
 
+void Nnet::SetMiniBatch(int32 mini_batch) const {
+  KALDI_ASSERT(!components_.empty());
+  KALDI_ASSERT(mini_batch > 0);
+  for (size_t i = 0; i < components_.size(); i++) {
+    if (components_[i]->Type() == "CuDNNRecurrentComponent") {
+      dynamic_cast<CuDNNRecurrentComponent *>(components_[i])->InitMiniBatch(mini_batch, 0);
+    }
+  }
+}
 
 int32 Nnet::LeftContext() const {
   KALDI_ASSERT(!components_.empty());
