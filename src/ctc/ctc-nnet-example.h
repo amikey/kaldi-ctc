@@ -61,6 +61,10 @@ struct NnetCtcExample {
     return input_frames.NumRows();
   }
 
+  int32 NumLabels() const {
+    return labels.size();
+  }
+
   NnetCtcExample() { }
   // NnetCtcExample(const NnetCtcExample &other);
 
@@ -76,8 +80,10 @@ RandomAccessNnetCtcExampleReader;
 
 bool SortNnetCtcExampleByNumFrames(const std::pair<std::string, NnetCtcExample> &e1,
                                    const std::pair<std::string, NnetCtcExample> &e2);
-// bool SortNnetCtcExampleByNumFrames(const std::pair<std::string, NnetCtcExample*> &e1, const std::pair<std::string, NnetCtcExample*> &e2);
 
+void FrameSubsamplingShiftFeatureTimes(int32 frame_subsampling_factor, int32 frame_shift, Matrix<BaseFloat> &feature);
+
+void FrameSubsamplingShiftNnetCtcExampleTimes(int32 frame_subsampling_factor, int32 frame_shift, NnetCtcExample *eg);
 
 /** This class stores neural net training examples to be used in
     multi-threaded training.  */

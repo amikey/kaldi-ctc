@@ -22,6 +22,9 @@
 #include "nnet2/nnet-nnet.h"
 #include "thread/kaldi-thread.h"
 
+// The CUDA implementation supports a maximum label length of 639 (timesteps are unlimited).
+#define MAX_WARPCTC_LABEL_LENGTH 639
+
 namespace kaldi {
 namespace ctc {
 
@@ -77,7 +80,13 @@ class NnetCtcExampleBackgroundReader {
       examples_.reserve(minibatch_size);
       // Read the examples.
       for (; examples_.size() < minibatch_size && !reader_->Done(); reader_->Next()) {
-        if (reader_->Value().NumFrames() > max_frames_) {
+        int32 num_frames = reader_->Value().NumFrames();
+        int32 num_labels = reader_->Value().NumLabels();
+        if (num_frames > max_frames_ || num_labels > MAX_WARPCTC_LABEL_LENGTH) {
+          num_skiped_example_++;
+          continue;
+        } else if (num_frames < 2 * num_labels + 1) {
+          KALDI_WARN << "Too little feature frames.";
           num_skiped_example_++;
           continue;
         }

@@ -66,16 +66,32 @@ void NnetCtcExample::SetLabels(const std::vector<int32> &alignment) {
   labels = alignment;
 }
 
-// NnetCtcExample::NnetCtcExample(const NnetCtcExample &other) {
-//   labels = other.labels;
-//   input_frames = other.input_frames;
-//   left_context = other.left_context;
-//   spk_info = other.spk_info;
-// }
 
 bool SortNnetCtcExampleByNumFrames(const std::pair<std::string, NnetCtcExample> &e1,
                                    const std::pair<std::string, NnetCtcExample> &e2) {
   return e1.second.NumFrames() < e2.second.NumFrames();
+}
+
+void FrameSubsamplingShiftFeatureTimes(int32 frame_subsampling_factor, int32 frame_shift, Matrix<BaseFloat> &feature) {
+  Matrix<BaseFloat> full_src(feature);
+  std::vector<int32> indexs;
+  for (int i = 0; i + frame_shift < full_src.NumRows(); i += frame_subsampling_factor) {
+    indexs.push_back(i + frame_shift);
+  }
+  if (indexs.size() == 0)
+    return;
+
+  feature.Resize(indexs.size(), full_src.NumCols());
+  feature.CopyRows(full_src, &(indexs[0]));
+}
+
+void FrameSubsamplingShiftNnetCtcExampleTimes(int32 frame_subsampling_factor, int32 frame_shift, NnetCtcExample *eg) {
+  if (frame_subsampling_factor <= 1)
+    return;
+  KALDI_ASSERT(frame_shift < frame_subsampling_factor);
+  Matrix<BaseFloat> full_src(eg->input_frames);
+  FrameSubsamplingShiftFeatureTimes(frame_subsampling_factor, frame_shift, full_src);
+  eg->input_frames = full_src;
 }
 
 void ExamplesRepository::AcceptExamples(

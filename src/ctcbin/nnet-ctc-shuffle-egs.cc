@@ -40,12 +40,19 @@ int main(int argc, char *argv[]) {
 
     int32 srand_seed = 0;
     int32 buffer_size = 0;
+    int32 frame_shift = 0;
+    int32 frame_subsampling_factor = 0;
+
     ParseOptions po(usage);
     po.Register("srand", &srand_seed, "Seed for random number generator ");
     po.Register("buffer-size", &buffer_size, "If >0, size of a buffer we use "
                 "to do limited-memory partial randomization.  Otherwise, do "
                 "full randomization.");
-
+    po.Register("frame-shift", &frame_shift, "Allows you to shift time values "
+                "in the supervision data (excluding iVector data) - useful in "
+                "augmenting data.  Note, the outputs will remain at the closest "
+                "exact multiples of the frame subsampling factor");
+    po.Register("frame-subsampling-factor", &frame_subsampling_factor, "the frame subsampling factor");
     po.Read(argc, argv);
 
     srand(srand_seed);
@@ -83,6 +90,8 @@ int main(int argc, char *argv[]) {
           egs[index] = std::make_pair(example_reader.Key(),
                                       new NnetCtcExample(example_reader.Value()));
         } else {
+          if (frame_shift != 0)
+            FrameSubsamplingShiftNnetCtcExampleTimes(frame_subsampling_factor, frame_shift, egs[index].second);
           example_writer.Write(egs[index].first, *(egs[index].second));
           egs[index].first = example_reader.Key();
           *(egs[index].second) = example_reader.Value();
@@ -92,6 +101,8 @@ int main(int argc, char *argv[]) {
     }
     for (size_t i = 0; i < egs.size(); i++) {
       if (egs[i].second != NULL) {
+        if (frame_shift != 0)
+          FrameSubsamplingShiftNnetCtcExampleTimes(frame_subsampling_factor, frame_shift, egs[i].second);
         example_writer.Write(egs[i].first, *(egs[i].second));
         delete egs[i].second;
         num_done++;

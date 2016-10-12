@@ -30,6 +30,7 @@
 #include "decoder/decoder-wrappers.h"
 #include "ctc/ctc-decodable-am-nnet.h"
 #include "ctc/ctc-decoder-wrappers.h"
+#include "ctc/ctc-nnet-example.h"
 
 #include "base/timer.h"
 
@@ -53,6 +54,8 @@ int main(int argc, char *argv[]) {
     bool allow_partial = true;
     BaseFloat blank_threshold = 0.98;
     BaseFloat acoustic_scale = 1.0;
+    int32 frame_subsampling_factor = 0, frame_shift = 0;
+
     LatticeFasterDecoderConfig config;
     std::string use_gpu = "yes";
 
@@ -66,6 +69,11 @@ int main(int argc, char *argv[]) {
                 "If blank prob bigger than blank_threshold, skip this frame(faster), set 1.0 to avoid skip any frame.");
     po.Register("use-gpu", &use_gpu,
                 "yes|no|optional|wait, only has effect if compiled with CUDA");
+    po.Register("frame-shift", &frame_shift, "Allows you to shift time values "
+                "in the supervision data (excluding iVector data) - useful in "
+                "augmenting data.  Note, the outputs will remain at the closest "
+                "exact multiples of the frame subsampling factor");
+    po.Register("frame-subsampling-factor", &frame_subsampling_factor, "the frame subsampling factor");
 
     po.Read(argc, argv);
 
@@ -112,7 +120,6 @@ int main(int argc, char *argv[]) {
         KALDI_ERR << "Could not read symbol table from file "
                   << word_syms_filename;
 
-
     double tot_like = 0.0;
     kaldi::int64 frame_count = 0;
     int num_success = 0, num_fail = 0;
@@ -135,8 +142,16 @@ int main(int argc, char *argv[]) {
             continue;
           }
           bool pad_input = true;
-          CuMatrix<BaseFloat> feats(features.NumRows(), features.NumCols(), kUndefined, kStrideEqualNumCols);
-          feats.CopyFromMat(features);
+          CuMatrix<BaseFloat> feats;
+          if (frame_subsampling_factor > 1) {
+            Matrix<BaseFloat> features_cpu(features);
+            FrameSubsamplingShiftFeatureTimes(frame_subsampling_factor, frame_shift, features_cpu);
+            feats.Resize(features_cpu.NumRows(), features_cpu.NumCols(), kUndefined, kStrideEqualNumCols);
+            feats.CopyFromMat(features_cpu);                        
+          } else {
+            feats.Resize(features.NumRows(), features.NumCols(), kUndefined, kStrideEqualNumCols);
+            feats.CopyFromMat(features);            
+          }
 
           CtcDecodableAmNnet nnet_decodable(trans_model,
                                             am_nnet,
@@ -178,8 +193,16 @@ int main(int argc, char *argv[]) {
         LatticeFasterDecoder decoder(fst_reader.Value(), config);
 
         bool pad_input = true;
-        CuMatrix<BaseFloat> feats(features.NumRows(), features.NumCols(), kUndefined, kStrideEqualNumCols);
-        feats.CopyFromMat(features);
+        CuMatrix<BaseFloat> feats;
+        if (frame_subsampling_factor > 1) {
+          Matrix<BaseFloat> features_cpu(features);
+          FrameSubsamplingShiftFeatureTimes(frame_subsampling_factor, frame_shift, features_cpu);
+          feats.Resize(features_cpu.NumRows(), features_cpu.NumCols(), kUndefined, kStrideEqualNumCols);
+          feats.CopyFromMat(features_cpu);                        
+        } else {
+          feats.Resize(features.NumRows(), features.NumCols(), kUndefined, kStrideEqualNumCols);
+          feats.CopyFromMat(features);            
+        }
 
         CtcDecodableAmNnet nnet_decodable(trans_model,
                                           am_nnet,
