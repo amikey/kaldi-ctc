@@ -35,7 +35,12 @@ int main(int argc, char *argv[]) {
         "Usage:  ali-to-pdf  [options] <model> <alignments-rspecifier> <pdfs-wspecifier>\n"
         "e.g.: \n"
         " ali-to-pdf 1.mdl ark:1.ali ark, t:-\n";
+
+    int32 shift = 0;
+    bool unique = false;
     ParseOptions po(usage);
+    po.Register("shift", &shift, "shift pdfid(usefull for CTC training).");
+    po.Register("unique", &unique, "unique pdfid sequences(usefull for CTC training).");
 
     po.Read(argc, argv);
 
@@ -60,7 +65,12 @@ int main(int argc, char *argv[]) {
       std::vector<int32> alignment = reader.Value();
 
       for (size_t i = 0; i < alignment.size(); i++)
-        alignment[i] = trans_model.TransitionIdToPdf(alignment[i]);
+        alignment[i] = trans_model.TransitionIdToPdf(alignment[i]) + shift;
+
+      if (unique) {
+        std::vector<int32>::iterator it = std::unique(alignment.begin(), alignment.end());
+        alignment.resize(std::distance(alignment.begin(), it));
+      }
 
       writer.Write(key, alignment);
       num_done++;

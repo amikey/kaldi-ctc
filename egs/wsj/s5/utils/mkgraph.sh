@@ -1,6 +1,7 @@
 #!/bin/bash
 # Copyright 2010-2012 Microsoft Corporation
 #           2012-2013 Johns Hopkins University (Author: Daniel Povey)
+#           2016      LingoChamp Feiteng
 # Apache 2.0
 
 # This script creates a fully expanded decoding graph (HCLG) that represents
@@ -19,11 +20,13 @@ tscale=1.0
 loopscale=0.1
 
 remove_oov=false
+ctc=false
 
-for x in `seq 6`; do
+for x in `seq 7`; do
   [ "$1" == "--mono" ] && context=mono && shift;
   [ "$1" == "--left-biphone" ] && context=lbiphone && shift;
   [ "$1" == "--quinphone" ] && context=quinphone && shift;
+  [ "$1" == "--ctc" ] && ctc=true && shift;
   [ "$1" == "--remove-oov" ] && remove_oov=true && shift;
   [ "$1" == "--transition-scale" ] && tscale=$2 && shift 2;
   [ "$1" == "--self-loop-scale" ] && loopscale=$2 && shift 2;
@@ -108,7 +111,7 @@ fi
 
 if [[ ! -s $dir/Ha.fst || $dir/Ha.fst -ot $model  \
     || $dir/Ha.fst -ot $lang/tmp/ilabels_${N}_${P} ]]; then
-  make-h-transducer --disambig-syms-out=$dir/disambig_tid.int \
+  make-h-transducer --ctc=$ctc --disambig-syms-out=$dir/disambig_tid.int \
     --transition-scale=$tscale $lang/tmp/ilabels_${N}_${P} $tree $model \
      > $dir/Ha.fst  || exit 1;
 fi
@@ -127,7 +130,7 @@ if [[ ! -s $dir/HCLGa.fst || $dir/HCLGa.fst -ot $dir/Ha.fst || \
 fi
 
 if [[ ! -s $dir/HCLG.fst || $dir/HCLG.fst -ot $dir/HCLGa.fst ]]; then
-  add-self-loops --self-loop-scale=$loopscale --reorder=true \
+  add-self-loops --ctc=$ctc --self-loop-scale=$loopscale --reorder=true \
     $model < $dir/HCLGa.fst > $dir/HCLG.fst || exit 1;
 
   if [ $tscale == 1.0 -a $loopscale == 1.0 ]; then
@@ -141,6 +144,10 @@ fi
 if ! [ $(head -c 67 $dir/HCLG.fst | wc -c) -eq 67 ]; then
   echo "$0: it looks like the result in $dir/HCLG.fst is empty"
   exit 1
+fi
+
+if $ctc;then
+  ctc-make-decoding-graph --add-phone-loop=false $dir/HCLG.fst - | fstminimizeencoded >$dir/CTC.fst || exit 1;
 fi
 
 # save space.

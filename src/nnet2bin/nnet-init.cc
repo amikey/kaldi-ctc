@@ -41,11 +41,14 @@ int main(int argc, char *argv[]) {
     
     bool binary_write = true;
     int32 srand_seed = 0;
+    std::string use_gpu = "no";
     
     ParseOptions po(usage);
     po.Register("binary", &binary_write, "Write output in binary mode");
     po.Register("srand", &srand_seed, "Seed for random number generator");
-    
+    po.Register("use-gpu", &use_gpu,
+                "yes|no|optional|wait, only has effect if compiled with CUDA");
+
     po.Read(argc, argv);
     srand(srand_seed);
     
@@ -53,6 +56,10 @@ int main(int argc, char *argv[]) {
       po.PrintUsage();
       exit(1);
     }
+
+#if HAVE_CUDA==1
+    CuDevice::Instantiate().SelectGpuId(use_gpu);
+#endif
 
     std::string config_rxfilename = po.GetArg(1),
         raw_nnet_wxfilename = po.GetArg(2);
@@ -63,11 +70,17 @@ int main(int argc, char *argv[]) {
       Input ki(config_rxfilename, &binary);
       KALDI_ASSERT(!binary && "Expect config file to contain text.");
       nnet.Init(ki.Stream());
+      nnet.SetMiniBatch(1); // init RNN weights
     }
 
     WriteKaldiObject(nnet, raw_nnet_wxfilename, binary_write);
     KALDI_LOG << "Initialized raw neural net and wrote it to "
               << raw_nnet_wxfilename;
+
+#if HAVE_CUDA==1
+    CuDevice::Instantiate().PrintProfile();
+#endif
+
     return 0;
   } catch(const std::exception &e) {
     std::cerr << e.what() << '\n';

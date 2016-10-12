@@ -90,23 +90,29 @@ int main(int argc, char *argv[]) {
     BaseFloat prior_floor = 1.0e-15; // Have a very low prior floor, since this method
                                      // isn't likely to have a problem with very improbable
                                      // classes.
+    BaseFloat google_prior_const = 0;
     
     ParseOptions po(usage);
     po.Register("binary", &binary_write, "Write output in binary mode");
     po.Register("prior-floor", &prior_floor, "When setting priors, floor for "
                 "priors (only used to avoid generating NaNs upon inversion)");
+    po.Register("google-prior-const", &google_prior_const,
+                "Divide the blank label posterior by a constant value");
 
     po.Read(argc, argv);
-    
-    if (po.NumArgs() != 3) {
-      po.PrintUsage();
-      exit(1);
+
+    std::string nnet_rxfilename, posterior_vec_rxfilename, nnet_wxfilename;
+    if (google_prior_const) {
+      KALDI_ASSERT(po.NumArgs() == 2);
+      nnet_rxfilename = po.GetArg(1);
+      nnet_wxfilename = po.GetArg(2);
+    } else {
+      KALDI_ASSERT(po.NumArgs() == 3);
+      nnet_rxfilename = po.GetArg(1);
+      posterior_vec_rxfilename = po.GetArg(2);
+      nnet_wxfilename = po.GetArg(3);
     }
 
-    std::string nnet_rxfilename = po.GetArg(1),
-        posterior_vec_rxfilename = po.GetArg(2),
-        nnet_wxfilename = po.GetArg(3);
-    
     TransitionModel trans_model;
     AmNnet am_nnet;
     {
@@ -118,14 +124,18 @@ int main(int argc, char *argv[]) {
     
 
     Vector<BaseFloat> posterior_vec;
-    ReadKaldiObject(posterior_vec_rxfilename, &posterior_vec);
 
-    KALDI_ASSERT(posterior_vec.Sum() > 0.0);
-    posterior_vec.Scale(1.0 / posterior_vec.Sum()); // Renormalize
-    
-    Vector<BaseFloat> old_priors(am_nnet.Priors());
-
-    PrintPriorDiagnostics(old_priors, posterior_vec);
+    if (google_prior_const) {
+      posterior_vec.Resize(am_nnet.NumPdfs());
+      posterior_vec.Set(1.0);
+      posterior_vec(0) = google_prior_const;
+    } else {
+      ReadKaldiObject(posterior_vec_rxfilename, &posterior_vec);
+      KALDI_ASSERT(posterior_vec.Sum() > 0.0);
+      posterior_vec.Scale(1.0 / posterior_vec.Sum()); // Renormalize
+      Vector<BaseFloat> old_priors(am_nnet.Priors());
+      PrintPriorDiagnostics(old_priors, posterior_vec);
+    }
     
     am_nnet.SetPriors(posterior_vec);
         

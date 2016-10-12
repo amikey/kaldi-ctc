@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
     BaseFloat self_loop_scale = 1.0;
     bool reorder = true;
     std::string disambig_in_filename;
+    bool ctc = false;
 
     ParseOptions po(usage);
     po.Register("self-loop-scale", &self_loop_scale,
@@ -60,6 +61,8 @@ int main(int argc, char *argv[]) {
                 "List of disambiguation symbols on input of fst-in [input file]");
     po.Register("reorder", &reorder,
                 "If true, reorder symbols for more decoding efficiency");
+    po.Register("ctc", &ctc,
+                "If true, don't change/add probabilities on arcs");
     po.Read(argc, argv);
 
     if (po.NumArgs() < 1 || po.NumArgs() > 3) {
@@ -103,7 +106,8 @@ int main(int argc, char *argv[]) {
                  disambig_syms_in,
                  self_loop_scale,
                  reorder,
-                 fst);
+                 fst,
+                 ctc);
 
     if (! fst->Write(fst_out_filename) )
       KALDI_ERR << "add-self-loops: error writing FST to "
