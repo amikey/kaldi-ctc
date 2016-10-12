@@ -42,21 +42,35 @@ echo "$0 $@"  # Print the command line for logging
 [ -f path.sh ] && . ./path.sh
 . parse_options.sh || exit 1;
 
-if [ $# != 5 ]; then
-  echo "Usage: build_tree.sh <#leaves> <data> <lang> <ali-dir> <exp-dir>"
+function Usage {
+  echo "Usage: build_tree.sh [<#leaves>] <data> <lang> <ali-dir> <exp-dir>"
   echo " e.g.: build_tree.sh 2500 data/train data/lang exp/tri2b_ali exp/tree_2500"
   echo "Main options (for others, see top of script file)"
   echo "  --cmd (utils/run.pl|utils/queue.pl <queue opts>) # how to run jobs."
   echo "  --config <config-file>                           # config containing options"
   echo "  --stage <stage>                                  # stage to do partial re-run from."
+}
+if [ $# != 4 && $# != 5 ]; then
+  Usage
   exit 1;
 fi
 
-numleaves=$1
-data=$2
-lang=$3
-alidir=$4
-dir=$5
+if $mono;then
+  data=$1
+  lang=$2
+  alidir=$3
+  dir=$4
+else
+  if [ $# != 5 ]; then
+    Usage
+    exit 1;
+  fi
+  numleaves=$1
+  data=$2
+  lang=$3
+  alidir=$4
+  dir=$5
+fi
 
 for f in $data/feats.scp $lang/phones.txt $alidir/final.mdl $alidir/ali.1.gz; do
   [ ! -f $f ] && echo "train_sat.sh: no such file $f" && exit 1;
@@ -169,7 +183,6 @@ if ! $mono;then
     grep 'no stats' $dir/log/init_model.log && echo "This is a bad warning.";
     rm $dir/treeacc
   fi
-
 else
   echo "$0: getting mono tree/model"
   cp $dir/mono.mdl $dir/1.mdl || exit 1;
@@ -183,7 +196,7 @@ if [ $stage -le -1 ]; then
   echo "$0: Converting alignments from $alidir to use current tree(pdfs)"
   $cmd JOB=1:$nj $dir/log/convert.JOB.log \
     convert-ali --frame-subsampling-factor=$frame_subsampling_factor \
-       $alidir/final.mdl $dir/1.mdl $dir/tree \
+     $alidir/final.mdl $dir/1.mdl $dir/tree \
      "ark:gunzip -c $alidir/ali.JOB.gz|" ark:- \| \
      ali-to-pdf --shift=$pdf_shift --unique=$unique $dir/1.mdl ark:- "ark:|gzip -c >$dir/ali.JOB.gz" || exit 1;
 fi

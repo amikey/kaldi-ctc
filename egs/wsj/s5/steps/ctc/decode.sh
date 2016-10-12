@@ -43,6 +43,7 @@ minimize=false
 decode_opts=""
 
 verbose=0
+frame_shift=0
 
 # End configuration section.
 
@@ -82,7 +83,7 @@ for f in $graphdir/CTC.fst $data/feats.scp $srcdir/$iter.mdl $extra_files; do
   [ ! -f $f ] && echo "$0: no such file $f" && exit 1;
 done
 
-# frame_subsampling_factor=$(cat $srcdir/frame_subsampling_factor) || exit 1;
+frame_subsampling_factor=$(cat $srcdir/frame_subsampling_factor) || exit 1;
 
 sdata=$data/split$nj;
 cmvn_opts=`cat $srcdir/cmvn_opts` || exit 1;
@@ -153,6 +154,7 @@ if [ $stage -le 1 ]; then
       nnet2-ctc-latgen-faster --blank-threshold=$blank_threshold --verbose=$verbose $ivector_opts \
         --minimize=$minimize --max-active=$max_active --min-active=$min_active --beam=$beam $decode_opts \
         --lattice-beam=$lattice_beam --acoustic-scale=$acwt \
+        --frame-subsampling-factor=$frame_subsampling_factor --frame-shift=$frame_shift \
         --word-symbol-table=$graphdir/words.txt "$model" \
         $graphdir/CTC.fst "$feats" \
         "ark:|lattice-scale --acoustic-scale=$lattice_acoustic_scale ark:- ark:- | gzip -c > $dir/lat.JOB.gz" || exit 1 &
