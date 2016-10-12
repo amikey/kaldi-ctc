@@ -660,7 +660,7 @@ Component * CuDNNRecurrentComponent::Copy() const {
 }
 
 void CuDNNRecurrentComponent::Read(std::istream &is, bool binary) {
-  ExpectToken(is, binary, "<CuDNNRecurrentComponent>");
+  // ExpectToken(is, binary, "<CuDNNRecurrentComponent>");
   ExpectToken(is, binary, "<LearningRate>");
   ReadBasicType(is, binary, &learning_rate_);
   ExpectToken(is, binary, "<IsGradient>");
@@ -762,7 +762,7 @@ void CuDNNRecurrentComponent::PerturbParams(BaseFloat stddev) {
 
 
 void ClipGradientComponent::Read(std::istream &is, bool binary) {
-  ExpectToken(is, binary, "<ClipGradientComponent>");
+  // ExpectToken(is, binary, "<ClipGradientComponent>");
   ExpectToken(is, binary, "<Dim>");
   ReadBasicType(is, binary, &dim_);
   ExpectToken(is, binary, "<ClippingThreshold>");

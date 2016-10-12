@@ -80,7 +80,7 @@ NnetComputer::NnetComputer(const Nnet &nnet,
   nnet.ComputeChunkInfo(num_rows, 1, &chunk_info_);
 
   CuMatrix<BaseFloat> &input(forward_data_[0]);
-  input.Resize(num_rows, dim);
+  input.Resize(num_rows, dim, kUndefined, kStrideEqualNumCols);
   input.Range(left_context, input_feats.NumRows(),
               0, dim).CopyFromMat(input_feats);
   for (int32 i = 0; i < left_context; i++)

@@ -66,18 +66,17 @@ int main(int argc, char *argv[]) {
     priors.Set(1.0);  // - log(1.0) = 0
     priors(0) = 9;    // - log(p/9) = - (log(p) - log(9))
 
+    nnet2::Nnet nnet;
+    bool binary;
+    Input ki(raw_nnet_rxfilename, &binary);
+    nnet.Read(ki.Stream(), binary);
 
-      nnet2::Nnet nnet;
-      bool binary;
-      Input ki(raw_nnet_rxfilename, &binary);
-      nnet.Read(ki.Stream(), binary);
+    nnet2::AmNnet am_nnet(nnet);
+    am_nnet.SetPriors(priors);
 
-      nnet2::AmNnet am_nnet(nnet);
-      am_nnet.SetPriors(priors);
-
-      Output ko(ctc_model_wxfilename, binary_write);
-      ctc_trans_model.Write(ko.Stream(), binary_write);
-      am_nnet.Write(ko.Stream(), binary_write);
+    Output ko(ctc_model_wxfilename, binary_write);
+    ctc_trans_model.Write(ko.Stream(), binary_write);
+    am_nnet.Write(ko.Stream(), binary_write);
 
 #if HAVE_CUDA==1
     CuDevice::Instantiate().PrintProfile();

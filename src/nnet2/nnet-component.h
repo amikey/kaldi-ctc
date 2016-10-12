@@ -206,7 +206,7 @@ class Component {
                  CuMatrix<BaseFloat> *out) const {
     if (out->NumRows() != out_info.NumRows() ||
         out->NumCols() != out_info.NumCols()) {
-      out->Resize(out_info.NumRows(), out_info.NumCols());
+      out->Resize(out_info.NumRows(), out_info.NumCols(), kUndefined, kStrideEqualNumCols);
     }
 
     // Cast to CuMatrixBase to use the virtual version of propagate function.
