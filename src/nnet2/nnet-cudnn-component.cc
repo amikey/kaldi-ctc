@@ -531,17 +531,28 @@ void CuDNNRecurrentComponent::Propagate(const ChunkInfo &in_info,
 
   SetBufferZero();
 
-  cudnn::RecurrentForwardTraining(
-    CuDevice::Instantiate().GetCudnnHandle(),
-    rnn_desc_, seq_length,
-    x_desc_, in.Data(),
-    hx_desc_, hx_.Data(), cx_desc_, cx_.Data(),
-    w_desc_, filter_params_.Data(),
-    y_desc_, out->Data(),
-    hy_desc_, hy_.Data(), cy_desc_, cy_.Data(),
-    work_space_.Data(), work_space_size_, reserve_space_.Data(),
-    reserve_space_size_);
-
+  if (mini_batch_ == 1) {
+    cudnn::RecurrentForwardInference(
+      CuDevice::Instantiate().GetCudnnHandle(),
+      rnn_desc_, seq_length,
+      x_desc_, in.Data(),
+      hx_desc_, hx_.Data(), cx_desc_, cx_.Data(),
+      w_desc_, filter_params_.Data(),
+      y_desc_, out->Data(),
+      hy_desc_, hy_.Data(), cy_desc_, cy_.Data(),
+      work_space_.Data(), work_space_size_);
+  } else {
+    cudnn::RecurrentForwardTraining(
+      CuDevice::Instantiate().GetCudnnHandle(),
+      rnn_desc_, seq_length,
+      x_desc_, in.Data(),
+      hx_desc_, hx_.Data(), cx_desc_, cx_.Data(),
+      w_desc_, filter_params_.Data(),
+      y_desc_, out->Data(),
+      hy_desc_, hy_.Data(), cy_desc_, cy_.Data(),
+      work_space_.Data(), work_space_size_, reserve_space_.Data(),
+      reserve_space_size_);
+  }
 }
 
 void CuDNNRecurrentComponent::Backprop(const ChunkInfo &in_info,
