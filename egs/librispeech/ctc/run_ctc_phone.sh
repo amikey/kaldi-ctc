@@ -136,7 +136,7 @@ if [ $stage -le 12 ];then
       steps/compute_cmvn_stats.sh data/${decode_set}_hires || exit 1;
     fi
 
-    for suffix in tgmed;do
+    for suffix in tgsmall tgmed;do
       graph_dir=$dir/graph_nosp_$suffix
       decode_dir=$dir/decode_${decode_set}${decode_iter:+_$decode_iter}_$suffix
 
@@ -146,6 +146,7 @@ if [ $stage -le 12 ];then
           --acwt 1 --lattice-acoustic-scale 10 \
           --decode-opts "--beam-delta=3 --prune-interval=20" --beam 20 --lattice-beam 10 \
           --verbose 0 --cmd "$decode_cmd" --nj $num_gpus $graph_dir data/${decode_set}_hires \
+          $decode_dir
       fi
     done
   done
