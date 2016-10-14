@@ -174,4 +174,7 @@ openblas_compiled:
 	$(MAKE) PREFIX=`pwd`/OpenBLAS/install FC=gfortran $(fortran_opt) DEBUG=1 USE_THREAD=0 -C OpenBLAS all install
 
 warpctc:
-	extras/install_warp_ctc.sh
+	extras/install_warp_ctc.sh || exit 1;
+
+cudnn:
+	extras/install_cudnn.sh || exit 1;
