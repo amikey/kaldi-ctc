@@ -50,27 +50,29 @@ function Usage {
   echo "  --config <config-file>                           # config containing options"
   echo "  --stage <stage>                                  # stage to do partial re-run from."
 }
-if [ $# != 4 && $# != 5 ]; then
+
+if [[ $# != 4 && $# != 5 ]]; then
   Usage
   exit 1;
 fi
 
-if $mono;then
+if [ $# -eq 4 ]; then
+  if ! $mono;then
+    Usage
+    exit 1
+  fi
   data=$1
   lang=$2
   alidir=$3
   dir=$4
 else
-  if [ $# != 5 ]; then
-    Usage
-    exit 1;
-  fi
   numleaves=$1
   data=$2
   lang=$3
   alidir=$4
   dir=$5
 fi
+
 
 for f in $data/feats.scp $lang/phones.txt $alidir/final.mdl $alidir/ali.1.gz; do
   [ ! -f $f ] && echo "train_sat.sh: no such file $f" && exit 1;
@@ -89,8 +91,8 @@ sdata=$data/split$nj;
 delta_opts=`cat $alidir/delta_opts 2>/dev/null`
 
 mkdir -p $dir/log
-echo $splice_opts $dir/splice_opts 2>/dev/null # frame-splicing options.
-echo $cmvn_opts $dir/cmvn_opts 2>/dev/null # cmn/cmvn option.
+echo $splice_opts >$dir/splice_opts 2>/dev/null # frame-splicing options.
+echo $cmvn_opts >$dir/cmvn_opts 2>/dev/null # cmn/cmvn option.
 # cp $alidir/delta_opts $dir 2>/dev/null # delta option.
 
 echo $nj >$dir/num_jobs
@@ -187,6 +189,7 @@ else
   echo "$0: getting mono tree/model"
   cp $dir/mono.mdl $dir/1.mdl || exit 1;
   cp $dir/mono.tree $dir/tree || exit 1;
+  draw-tree $lang/phones.txt $dir/tree | dot -Tps -Gsize=8,10.5 | ps2pdf - $dir/tree.pdf 2>/dev/null
 fi
 
 if [ $stage -le -1 ]; then

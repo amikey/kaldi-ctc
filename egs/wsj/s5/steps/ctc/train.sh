@@ -51,7 +51,9 @@ active_type="relu"
 bidirectional=true
 dropout_proportion=0
 
-max_allow_frames=1000 # 20 seconds
+max_allow_frames=2000 # 20 seconds
+frame_subsampling_factor=1
+
 rnn_mode=2
 num_rnn_layers=5
 cudnn_layers=1
@@ -66,7 +68,7 @@ bias_stddev=0.2
 
 self_repair_scale=0.00001
 momentum=0.0
-max_param_change=50
+max_param_change=20
 
 combine_final_nnet=false
 
@@ -177,11 +179,6 @@ for f in $data/feats.scp $lang/L.fst $alidir/tree; do
   [ ! -f $f ] && echo "$0: no such file $f" && exit 1;
 done
 
-# Set some variables.
-num_tokens=$(wc -l $lang/phones/sets.txt | awk '{print $1;}') || exit 1
-[ -z $num_tokens ] && echo "\$num_tokens is unset" && exit 1
-[ "$num_tokens" -eq "0" ] && echo "\$num_tokens is 0" && exit 1
-
 # sdata=$data/split$nj
 # utils/split_data.sh $data $nj || exit 1;
 
@@ -212,6 +209,7 @@ if [ $stage -le -5 ]; then
     --model.type $model_type --model.bidirectional $bidirectional \
     --model.cudnn-layers $cudnn_layers \
     --model.rnn-layers $num_rnn_layers \
+    --model.rnn-max-seq-length $max_allow_frames \
     --model.cell-dim $rnn_cell_dim \
     --model.param-stddev $param_stddev --model.bias-stddev $bias_stddev \
     --model.rnn-mode $rnn_mode --model.norm-based-clipping $norm_based_clipping \
@@ -277,8 +275,9 @@ ivector_dim=$(cat $egs_dir/info/ivector_dim) || exit 1;
 
 num_archives=$(cat $egs_dir/info/num_archives) || { echo "error: no such file $egs_dir/info/num_archives"; exit 1; }
 
+echo $frame_subsampling_factor >$dir/frame_subsampling_factor || exit 1;
 # num_archives_expanded considers each separate label-position from
-num_archives_expanded=$num_archives
+num_archives_expanded=$[$num_archives*$frame_subsampling_factor]
 
 if [ $num_jobs_nnet -gt $num_archives_expanded ]; then
   echo "$0: --num-jobs-nnet cannot exceed num-archives*frames-per-eg which is $num_archives_expanded"
@@ -312,29 +311,40 @@ else
   parallel_train_opts="--num-threads=$num_threads"
 fi
 
+if [ $minibatch_size -le 1 ];then
+  echo "$0: minibatch_size should bigger than 1." && exit 1
+fi
+
 approx_iters_per_epoch=$[$num_iters/$num_epochs]
 
-x=0
-
 cur_egs_dir=$egs_dir
-
 rnnlayer="CuDNNRecurrentComponent"
-while [ $x -lt $num_iters ]; do
-  if [ $x -ge 0 ] && [ $stage -le $x ]; then
 
+x=0
+num_archives_processed=0
+frame_subsampling_opts="--frame-subsampling-factor=$frame_subsampling_factor"
+
+while [ $x -lt $num_iters ]; do
+  local_num_jobs_nnet=$num_jobs_nnet
+  if [ $x -ge 0 ] && [ $stage -le $x ]; then
     if [ $x -gt 0 ] && [ $[$x%$cv_period] -eq 0 ]; then
       # Set off jobs doing some diagnostics, in the background.
       # Use the egs dir from the previous iteration for the diagnostics
+      frame_shift=$[($x/$cv_period)%$frame_subsampling_factor];
       if [ $num_jobs_nnet -lt 2 ];then
         $cmd $dir/log/compute_prob_valid.$x.log \
-          nnet2-ctc-compute-prob "nnet-am-copy --remove-dropout=true $dir/$x.mdl - |" ark:$cur_egs_dir/valid_diagnostic.egs
+          nnet2-ctc-compute-prob "nnet-am-copy --remove-dropout=true $dir/$x.mdl - |" \
+          "ark:nnet-ctc-shuffle-egs $frame_subsampling_opts --frame-shift=$frame_shift ark:$cur_egs_dir/valid_diagnostic.egs ark:- |"
         $cmd $dir/log/compute_prob_train.$x.log \
-          nnet2-ctc-compute-prob "nnet-am-copy --remove-dropout=true $dir/$x.mdl - |" ark:$cur_egs_dir/train_diagnostic.egs
+          nnet2-ctc-compute-prob "nnet-am-copy --remove-dropout=true $dir/$x.mdl - |" \
+          "ark:nnet-ctc-shuffle-egs $frame_subsampling_opts --frame-shift=$frame_shift ark:$cur_egs_dir/train_diagnostic.egs ark:- |"
       else
         $cmd $dir/log/compute_prob_valid.$x.log \
-          nnet2-ctc-compute-prob "nnet-am-copy --remove-dropout=true $dir/$x.mdl - |" ark:$cur_egs_dir/valid_diagnostic.egs &
+          nnet2-ctc-compute-prob "nnet-am-copy --remove-dropout=true $dir/$x.mdl - |" \
+          "ark:nnet-ctc-shuffle-egs $frame_subsampling_opts --frame-shift=$frame_shift ark:$cur_egs_dir/valid_diagnostic.egs ark:- |" &
         $cmd $dir/log/compute_prob_train.$x.log \
-          nnet2-ctc-compute-prob "nnet-am-copy --remove-dropout=true $dir/$x.mdl - |" ark:$cur_egs_dir/train_diagnostic.egs &
+          nnet2-ctc-compute-prob "nnet-am-copy --remove-dropout=true $dir/$x.mdl - |" \
+          "ark:nnet-ctc-shuffle-egs $frame_subsampling_opts --frame-shift=$frame_shift ark:$cur_egs_dir/train_diagnostic.egs ark:- |" &
         wait
       fi
     fi
@@ -343,6 +353,7 @@ while [ $x -lt $num_iters ]; do
     echo "Training neural net (pass $x / $num_iters) learning-rate $learning_rate at $(date)"
 
     mdl=$dir/$x.mdl
+
     # discriminative per layer training
     if [ $x -gt 1 ] && \
       [ $x -le $[($num_hidden_layers-1)*$add_layers_period] ] && \
@@ -387,7 +398,6 @@ while [ $x -lt $num_iters ]; do
 
     rm $dir/.error 2>/dev/null
 
-    local_num_jobs_nnet=$num_jobs_nnet
     ( # this sub-shell is so that when we "wait" below,
       # we only wait for the training jobs that we just spawned,
       # not the diagnostic jobs that we spawned above.
@@ -396,14 +406,15 @@ while [ $x -lt $num_iters ]; do
       # because the computation of which archive and which --frame option
       # to use for each job is a little complex, so we spawn each one separately.
       for n in $(seq $local_num_jobs_nnet); do
-        k=$[$x*$local_num_jobs_nnet + $n - 1]; # k is a zero-based index that we'll derive
-                                         # the other indexes from.
+        k=$[$num_archives_processed + $n - 1]; # k is a zero-based index that we'll derive
+                                               # the other indexes from.
         archive=$[($k%$num_archives)+1]; # work out the 1-based archive index.
+        frame_shift=$[($k/$num_archives)%$frame_subsampling_factor];
 
         $cmd $parallel_opts $dir/log/train.$x.$n.log \
           nnet2-ctc-train$parallel_suffix --max-allow-frames=$max_allow_frames --momentum=$momentum --max-param-change=$max_param_change $parallel_train_opts --verbose=$verbose \
             --minibatch-size=$this_minibatch_size "$mdl" \
-            "ark,bg:nnet-ctc-shuffle-egs --buffer-size=$shuffle_buffer_size --srand=$x ark:$cur_egs_dir/egs.$archive.ark ark:- |" \
+            "ark,bg:nnet-ctc-shuffle-egs $frame_subsampling_opts --frame-shift=$frame_shift --buffer-size=$shuffle_buffer_size --srand=$x ark:$cur_egs_dir/egs.$archive.ark ark:- |" \
             $dir/$[$x+1].$n.mdl || touch $dir/.error &
       done
       wait
@@ -440,6 +451,7 @@ while [ $x -lt $num_iters ]; do
       rm $dir/$[$x-8].mdl
     fi
   fi
+  num_archives_processed=$[$num_archives_processed + $local_num_jobs_nnet]
   x=$[$x+1]
 done
 
@@ -474,7 +486,7 @@ if [[ $adjust_priors && $stage -le $((num_iters+1)) ]]; then
       if [ $num_jobs_compute_prior -gt $num_archives ]; then num_jobs_compute_prior=num_archives; fi
       egs_part=JOB
       $cmd --max-jobs-run $num_jobs_nnet JOB=1:$num_jobs_compute_prior $dir/log/get_post.$x.JOB.log \
-        nnet-ctc-sort-egs ark:$cur_egs_dir/egs.$egs_part.ark ark:- \| \
+        nnet-ctc-shuffle-egs $frame_subsampling_opts ark:$cur_egs_dir/egs.$egs_part.ark ark:- \| \
         nnet-ctc-compute-from-egs $dir/final.mdl ark:- ark:- \| \
         matrix-sum-rows ark:- ark:- \| vector-sum ark:- $dir/post.$x.JOB.vec || exit 1;
       $cmd $dir/log/vector_sum.$x.log \

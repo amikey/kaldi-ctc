@@ -59,7 +59,7 @@ std::string CuDNNRecurrentComponent::Info() const {
          << ", input-dim=" << input_dim_
          << ", hidden-dim=" << hidden_dim_
          << ", num-layers=" << num_layers_
-         << ", max-seq-lenght=" << max_seq_length_
+         << ", max-seq-length=" << max_seq_length_
          << ", mini-batch=" << mini_batch_;
   if (bidirectional_)
     stream << ", BIDIRECTIONAL";
@@ -79,7 +79,7 @@ void CuDNNRecurrentComponent::InitFromString(std::string args) {
   ok = ok && ParseFromString("output-dim", &args, &hidden_dim_);
   ok = ok && ParseFromString("rnn-mode", &args, &rnn_mode_);
   ok = ok && ParseFromString("bidirectional", &args, &bidirectional_);
-  ok = ok && ParseFromString("max-seq-lenght", &args, &max_seq_length_);
+  ok = ok && ParseFromString("max-seq-length", &args, &max_seq_length_);
 
   ParseFromString("param-stddev", &args, &param_stddev_);
   ParseFromString("bias-stddev", &args, &bias_stddev_);

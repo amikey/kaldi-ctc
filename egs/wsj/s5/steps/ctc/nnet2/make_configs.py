@@ -128,6 +128,8 @@ def GetArgs():
                         help="", default = True, choices = ["false", "true"])
     parser.add_argument("--model.rnn-layers", type=int, dest = "rnn_layers",
                         help="RNN layers number", default = 2)
+    parser.add_argument("--model.rnn-max-seq-length", type=int, dest = "rnn_max_seq_length",
+                        help="RNN layer max seq length", default = 1000)
     parser.add_argument("--model.cudnn-layers", type=int, dest = "cudnn_layers",
                         help="RNN layers In one CuDNNRecurrentComponent", default = 1)
     parser.add_argument("--model.cell-dim", type=int, dest = "rnn_cell_dim",
@@ -192,88 +194,10 @@ def CheckArgs(args):
 
     return args
 
-def AddConvMaxpLayer(config_lines, name, input, args):
-    if '3d-dim' not in input:
-        raise Exception("The input to AddConvMaxpLayer() needs '3d-dim' parameters.")
-
-    input = nodes.AddConvolutionLayer(config_lines, name, input,
-                              input['3d-dim'][0], input['3d-dim'][1], input['3d-dim'][2],
-                              args.filt_x_dim, args.filt_y_dim, args.filt_z_dim,
-                              args.filt_x_step, args.filt_y_step, args.filt_z_step,
-                              args.num_filters, input['vectorization'])
-
-    if args.pool_x_size > 1 or args.pool_y_size > 1 or args.pool_z_size > 1:
-      input = nodes.AddMaxpoolingLayer(config_lines, name, input,
-                                input['3d-dim'][0], input['3d-dim'][1], input['3d-dim'][2],
-                                args.pool_x_size, args.pool_y_size, args.pool_z_size,
-                                args.pool_x_step, args.pool_y_step, args.pool_z_step)
-    else:
-      output = nodes.AddRelNormLayer(config_lines, name, input, norm_target_rms = 1.0)
-      input['descriptor'] = output['descriptor']
-
-    return input
-
-# The ivectors are processed through an affine layer parallel to the CNN layers,
-# then concatenated with the CNN output and passed to the deeper part of the network.
-def AddCnnLayers(config_lines, cnn_layer, cnn_bottleneck_dim, cepstral_lifter, config_dir, feat_dim, splice_indexes=[0], ivector_dim=0):
-    cnn_args = ParseCnnString(cnn_layer)
-    num_cnn_layers = len(cnn_args)
-    # We use an Idct layer here to convert MFCC to FBANK features
-    nnet3_train_lib.WriteIdctMatrix(feat_dim, cepstral_lifter, config_dir.strip() + "/idct.mat")
-    prev_layer_output = {'descriptor':  "input",
-                         'dimension': feat_dim}
-    prev_layer_output = nodes.AddFixedAffineLayer(config_lines, "Idct", prev_layer_output, config_dir.strip() + '/idct.mat')
-
-    list = [('Offset({0}, {1})'.format(prev_layer_output['descriptor'],n) if n != 0 else prev_layer_output['descriptor']) for n in splice_indexes]
-    splice_descriptor = "Append({0})".format(", ".join(list))
-    cnn_input_dim = len(splice_indexes) * feat_dim
-    prev_layer_output = {'descriptor':  splice_descriptor,
-                         'dimension': cnn_input_dim,
-                         '3d-dim': [len(splice_indexes), feat_dim, 1],
-                         'vectorization': 'yzx'}
-
-    for cl in range(0, num_cnn_layers):
-        prev_layer_output = AddConvMaxpLayer(config_lines, "L{0}".format(cl), prev_layer_output, cnn_args[cl])
-
-    if cnn_bottleneck_dim > 0:
-        prev_layer_output = nodes.AddAffineLayer(config_lines, "cnn-bottleneck", prev_layer_output, cnn_bottleneck_dim, "")
-
-    if ivector_dim > 0:
-        iv_layer_output = {'descriptor':  'ReplaceIndex(ivector, t, 0)',
-                           'dimension': ivector_dim}
-        iv_layer_output = nodes.AddAffineLayer(config_lines, "ivector", iv_layer_output, ivector_dim, "")
-        prev_layer_output['descriptor'] = 'Append({0}, {1})'.format(prev_layer_output['descriptor'], iv_layer_output['descriptor'])
-        prev_layer_output['dimension'] = prev_layer_output['dimension'] + iv_layer_output['dimension']
-
-    return prev_layer_output
-
 def PrintConfig(file_name, config_lines):
     f = open(file_name, 'w')
     f.write("\n".join(config_lines['components'])+"\n")
     f.close()
-
-def ParseCnnString(cnn_param_string_list):
-    cnn_parser = argparse.ArgumentParser(description="cnn argument parser")
-
-    cnn_parser.add_argument("--filt-x-dim", required=True, type=int)
-    cnn_parser.add_argument("--filt-y-dim", required=True, type=int)
-    cnn_parser.add_argument("--filt-z-dim", type=int, default = None)
-    cnn_parser.add_argument("--filt-x-step", type=int, default = 1)
-    cnn_parser.add_argument("--filt-y-step", type=int, default = 1)
-    cnn_parser.add_argument("--filt-z-step", type=int, default = None)
-    cnn_parser.add_argument("--num-filters", required=True, type=int)
-    cnn_parser.add_argument("--pool-x-size", type=int, default = 1)
-    cnn_parser.add_argument("--pool-y-size", type=int, default = 1)
-    cnn_parser.add_argument("--pool-z-size", type=int, default = 1)
-    cnn_parser.add_argument("--pool-x-step", type=int, default = 1)
-    cnn_parser.add_argument("--pool-y-step", type=int, default = 1)
-    cnn_parser.add_argument("--pool-z-step", type=int, default = 1)
-
-    cnn_args = []
-    for cl in range(0, len(cnn_param_string_list)):
-         cnn_args.append(cnn_parser.parse_args(shlex.split(cnn_param_string_list[cl])))
-
-    return cnn_args
 
 def ParseSpliceString(splice_indexes):
     splice_array = []
@@ -311,13 +235,14 @@ def ParseSpliceString(splice_indexes):
 
 # The function signature of MakeConfigs is changed frequently as it is intended for local use in this script.
 def MakeConfigs(config_dir, splice_indexes_string,
-                cnn_layer, cnn_bottleneck_dim, cepstral_lifter,
                 feat_dim, ivector_dim, num_targets, add_lda, lda_dim,
-                affine_type, active_type, hidden_dim, cudnn_layers, dropout_proportion,
+                affine_type, active_type, hidden_dim,
+                cudnn_layers,
+                dropout_proportion,
                 param_stddev, bias_stddev,
                 self_repair_scale,
                 batch_normalize, objective_type,
-                model_type, rnn_bidirectional, rnn_mode, rnn_layers, rnn_cell_dim,
+                model_type, rnn_bidirectional, rnn_mode, rnn_layers, rnn_max_seq_length, rnn_cell_dim,
                 clipping_threshold, norm_based_clipping, rnn_first = True):
 
     parsed_splice_output = ParseSpliceString(splice_indexes_string.strip())
@@ -356,6 +281,7 @@ def MakeConfigs(config_dir, splice_indexes_string,
 
         first_rnn_layer = nodes.AddRnnLayer(init_config_lines, prev_layer_output, rnn_cell_dim,
                                     num_layers = cudnn_layers,
+                                    max_seq_length = rnn_max_seq_length,
                                     bidirectional = rnn_bidirectional,
                                     rnn_mode = rnn_mode,
                                     clipping_threshold = clipping_threshold,
@@ -369,9 +295,9 @@ def MakeConfigs(config_dir, splice_indexes_string,
 
     config_files[config_dir + '/init.config'] = init_config_lines
 
-    if cnn_layer is not None:
-        prev_layer_output = AddCnnLayers(config_lines, cnn_layer, cnn_bottleneck_dim, cepstral_lifter, config_dir,
-                                         feat_dim, splice_indexes[0], ivector_dim)
+    # if cnn_layer is not None:
+    #     prev_layer_output = AddCnnLayers(config_lines, cnn_layer, cnn_bottleneck_dim, cepstral_lifter, config_dir,
+    #                                      feat_dim, splice_indexes[0], ivector_dim)
 
     left_context = 0
     right_context = 0
@@ -388,6 +314,7 @@ def MakeConfigs(config_dir, splice_indexes_string,
             assert rnn_layer_output
             rnn_layer_output = nodes.AddRnnLayer(config_lines, rnn_layer_output, rnn_cell_dim,
                                         num_layers = cudnn_layers,
+                                        max_seq_length = rnn_max_seq_length,
                                         bidirectional = rnn_bidirectional,
                                         rnn_mode = rnn_mode,
                                         param_stddev = param_stddev, bias_stddev = bias_stddev,
@@ -396,6 +323,7 @@ def MakeConfigs(config_dir, splice_indexes_string,
                                         norm_based_clipping = norm_based_clipping,
                                         self_repair_scale_clipgradient = None)
         elif model_type == "FT":
+            assert False, "Error here."
             if active_type.lower() == 'relu':
                 prev_layer_output = nodes.AddAffRelNormLayer(config_lines, prev_layer_output, local_output_dim,
                                                             affine_type = affine_type,
@@ -444,9 +372,9 @@ def Main():
                 feat_dim = args.feat_dim, ivector_dim = args.ivector_dim,
                 num_targets = args.num_targets,
                 add_lda = args.add_lda, lda_dim = args.lda_dim,
-                cnn_layer = args.cnn_layer, cnn_bottleneck_dim = args.cnn_bottleneck_dim, cepstral_lifter = args.cepstral_lifter,
                 affine_type = args.affine_type, active_type = args.active_type, hidden_dim = args.hidden_dim,
                 dropout_proportion = args.dropout_proportion, cudnn_layers = args.cudnn_layers,
+                rnn_max_seq_length = args.rnn_max_seq_length,
                 param_stddev = args.param_stddev, bias_stddev = args.bias_stddev,
                 self_repair_scale = args.self_repair_scale,
                 objective_type = args.objective_type,

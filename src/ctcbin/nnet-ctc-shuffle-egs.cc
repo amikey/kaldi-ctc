@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
           egs[index] = std::make_pair(example_reader.Key(),
                                       new NnetCtcExample(example_reader.Value()));
         } else {
-          if (frame_shift != 0)
+          if (frame_subsampling_factor > 0)
             FrameSubsamplingShiftNnetCtcExampleTimes(frame_subsampling_factor, frame_shift, egs[index].second);
           example_writer.Write(egs[index].first, *(egs[index].second));
           egs[index].first = example_reader.Key();
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
     }
     for (size_t i = 0; i < egs.size(); i++) {
       if (egs[i].second != NULL) {
-        if (frame_shift != 0)
+        if (frame_subsampling_factor > 1)
           FrameSubsamplingShiftNnetCtcExampleTimes(frame_subsampling_factor, frame_shift, egs[i].second);
         example_writer.Write(egs[i].first, *(egs[i].second));
         delete egs[i].second;

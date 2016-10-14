@@ -1,0 +1,134 @@
+#!/bin/bash
+for x in exp/{mono,tri,sgmm,dnn,combine,ctc/}*/decode*; do [ -d $x ] && echo $x | grep "${1:-.*}" >/dev/null && grep WER $x/wer_* 2>/dev/null | utils/best_wer.sh; done
+for x in exp/{mono,tri,sgmm,dnn,combine}*/decode*; do [ -d $x ] && echo $x | grep "${1:-.*}" >/dev/null && grep Sum $x/score_*/*.sys 2>/dev/null | utils/best_wer.sh; done
+exit 0
+
+# Results with nnet3 tdnn+chain model
+# local/chain/run_tdnn_6z.sh
+# (4 epoch training on speed-perturbed data)
+# num_params=16.8M (12.7M after excluding the xent branch)
+%WER 3.92 [ 2131 / 54402, 290 ins, 197 del, 1644 sub ] exp/chain/tdnn_6z_sp/decode_dev_clean_fglarge/wer_11_0.5
+%WER 4.09 [ 2227 / 54402, 337 ins, 176 del, 1714 sub ] exp/chain/tdnn_6z_sp/decode_dev_clean_tglarge/wer_11_0.0
+%WER 5.11 [ 2781 / 54402, 329 ins, 300 del, 2152 sub ] exp/chain/tdnn_6z_sp/decode_dev_clean_tgmed/wer_12_0.0
+%WER 5.83 [ 3172 / 54402, 335 ins, 372 del, 2465 sub ] exp/chain/tdnn_6z_sp/decode_dev_clean_tgsmall/wer_12_0.0
+%WER 10.43 [ 5314 / 50948, 528 ins, 697 del, 4089 sub ] exp/chain/tdnn_6z_sp/decode_dev_other_fglarge/wer_14_0.5
+%WER 10.95 [ 5581 / 50948, 546 ins, 764 del, 4271 sub ] exp/chain/tdnn_6z_sp/decode_dev_other_tglarge/wer_14_0.5
+%WER 13.20 [ 6723 / 50948, 676 ins, 858 del, 5189 sub ] exp/chain/tdnn_6z_sp/decode_dev_other_tgmed/wer_13_0.0
+%WER 14.56 [ 7419 / 50948, 715 ins, 1003 del, 5701 sub ] exp/chain/tdnn_6z_sp/decode_dev_other_tgsmall/wer_13_0.0
+%WER 4.28 [ 2251 / 52576, 292 ins, 238 del, 1721 sub ] exp/chain/tdnn_6z_sp/decode_test_clean_fglarge/wer_11_1.0
+%WER 4.47 [ 2349 / 52576, 342 ins, 225 del, 1782 sub ] exp/chain/tdnn_6z_sp/decode_test_clean_tglarge/wer_11_0.5
+%WER 5.55 [ 2917 / 52576, 366 ins, 314 del, 2237 sub ] exp/chain/tdnn_6z_sp/decode_test_clean_tgmed/wer_13_0.0
+%WER 6.20 [ 3259 / 52576, 383 ins, 381 del, 2495 sub ] exp/chain/tdnn_6z_sp/decode_test_clean_tgsmall/wer_12_0.0
+%WER 10.76 [ 5634 / 52343, 643 ins, 672 del, 4319 sub ] exp/chain/tdnn_6z_sp/decode_test_other_fglarge/wer_12_0.5
+%WER 11.20 [ 5864 / 52343, 619 ins, 781 del, 4464 sub ] exp/chain/tdnn_6z_sp/decode_test_other_tglarge/wer_13_0.5
+%WER 13.47 [ 7051 / 52343, 733 ins, 933 del, 5385 sub ] exp/chain/tdnn_6z_sp/decode_test_other_tgmed/wer_13_0.0
+%WER 14.73 [ 7710 / 52343, 662 ins, 1209 del, 5839 sub ] exp/chain/tdnn_6z_sp/decode_test_other_tgsmall/wer_14_0.0
+
+# Results with nnet3 tdnn+chain model
+# local/chain/run_tdnn.sh
+# (4 epoch training on speed-perturbed and volumn-perturbed "cleaned" data and left-biphone model)
+# num_params=16.8M (12.7M after excluding the xent branch), average training time=71.8s per job(on Tesla K80), real-time factor=0.558894
+# for x in exp/chain_cleaned/tdnn_sp/decode_*; do grep WER $x/wer_* | utils/best_wer.sh ; done
+%WER 3.87 [ 2108 / 54402, 279 ins, 189 del, 1640 sub ] exp/chain_cleaned/tdnn_sp/decode_dev_clean_fglarge/wer_11_0.5
+%WER 3.97 [ 2162 / 54402, 277 ins, 206 del, 1679 sub ] exp/chain_cleaned/tdnn_sp/decode_dev_clean_tglarge/wer_11_0.5
+%WER 4.95 [ 2695 / 54402, 323 ins, 257 del, 2115 sub ] exp/chain_cleaned/tdnn_sp/decode_dev_clean_tgmed/wer_11_0.0
+%WER 5.57 [ 3029 / 54402, 332 ins, 307 del, 2390 sub ] exp/chain_cleaned/tdnn_sp/decode_dev_clean_tgsmall/wer_11_0.0
+%WER 10.22 [ 5208 / 50948, 547 ins, 643 del, 4018 sub ] exp/chain_cleaned/tdnn_sp/decode_dev_other_fglarge/wer_13_0.5
+%WER 10.79 [ 5497 / 50948, 568 ins, 715 del, 4214 sub ] exp/chain_cleaned/tdnn_sp/decode_dev_other_tglarge/wer_13_0.5
+%WER 13.01 [ 6628 / 50948, 718 ins, 841 del, 5069 sub ] exp/chain_cleaned/tdnn_sp/decode_dev_other_tgmed/wer_13_0.0
+%WER 14.36 [ 7317 / 50948, 700 ins, 1020 del, 5597 sub ] exp/chain_cleaned/tdnn_sp/decode_dev_other_tgsmall/wer_13_0.0
+%WER 4.17 [ 2194 / 52576, 321 ins, 190 del, 1683 sub ] exp/chain_cleaned/tdnn_sp/decode_test_clean_fglarge/wer_12_0.5
+%WER 4.36 [ 2292 / 52576, 331 ins, 209 del, 1752 sub ] exp/chain_cleaned/tdnn_sp/decode_test_clean_tglarge/wer_11_0.5
+%WER 5.33 [ 2802 / 52576, 343 ins, 292 del, 2167 sub ] exp/chain_cleaned/tdnn_sp/decode_test_clean_tgmed/wer_11_0.5
+%WER 5.93 [ 3118 / 52576, 414 ins, 287 del, 2417 sub ] exp/chain_cleaned/tdnn_sp/decode_test_clean_tgsmall/wer_10_0.0
+%WER 10.62 [ 5558 / 52343, 618 ins, 690 del, 4250 sub ] exp/chain_cleaned/tdnn_sp/decode_test_other_fglarge/wer_13_0.5
+%WER 10.96 [ 5738 / 52343, 628 ins, 692 del, 4418 sub ] exp/chain_cleaned/tdnn_sp/decode_test_other_tglarge/wer_12_0.5
+%WER 13.24 [ 6928 / 52343, 702 ins, 895 del, 5331 sub ] exp/chain_cleaned/tdnn_sp/decode_test_other_tgmed/wer_13_0.0
+%WER 14.53 [ 7603 / 52343, 726 ins, 1054 del, 5823 sub ] exp/chain_cleaned/tdnn_sp/decode_test_other_tgsmall/wer_13_0.0
+
+
+# Results with nnet3 tdnn+chain+sMBR
+# local/chain/run_tdnn_6z_discriminative.sh
+# a subset of the full list of results (using the acoustic model obtained at the end of the training):
+%WER 3.92 [ 2133 / 54402, 320 ins, 170 del, 1643 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_fglarge_epoch12/wer_11_0.5
+%WER 4.03 [ 2193 / 54402, 288 ins, 213 del, 1692 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tglarge_epoch12/wer_11_1.0
+%WER 5.21 [ 2835 / 54402, 306 ins, 329 del, 2200 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tgmed_epoch12/wer_11_0.5
+%WER 5.76 [ 3132 / 54402, 370 ins, 311 del, 2451 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tgsmall_epoch12/wer_12_0.0
+%WER 10.41 [ 5304 / 50948, 536 ins, 695 del, 4073 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_fglarge_epoch12/wer_14_1.0
+%WER 10.94 [ 5576 / 50948, 665 ins, 650 del, 4261 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tglarge_epoch12/wer_14_0.5
+%WER 13.74 [ 7002 / 50948, 733 ins, 895 del, 5374 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tgmed_epoch12/wer_12_0.0
+%WER 14.53 [ 7405 / 50948, 713 ins, 1033 del, 5659 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tgsmall_epoch12/wer_15_0.0
+%WER 4.31 [ 2268 / 52576, 326 ins, 208 del, 1734 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_fglarge_epoch12/wer_11_1.0
+%WER 4.51 [ 2371 / 52576, 345 ins, 218 del, 1808 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tglarge_epoch12/wer_13_0.5
+%WER 5.63 [ 2959 / 52576, 402 ins, 297 del, 2260 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tgmed_epoch12/wer_11_0.0
+%WER 6.15 [ 3234 / 52576, 388 ins, 365 del, 2481 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tgsmall_epoch12/wer_11_0.5
+%WER 10.62 [ 5558 / 52343, 668 ins, 602 del, 4288 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_fglarge_epoch12/wer_13_0.5
+%WER 11.06 [ 5788 / 52343, 580 ins, 770 del, 4438 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tglarge_epoch12/wer_13_1.0
+%WER 13.66 [ 7151 / 52343, 755 ins, 932 del, 5464 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tgmed_epoch12/wer_12_0.0
+%WER 14.75 [ 7721 / 52343, 895 ins, 841 del, 5985 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tgsmall_epoch12/wer_12_0.0
+
+# the full list of results
+%WER 3.92 [ 2133 / 54402, 320 ins, 170 del, 1643 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_fglarge_epoch12/wer_11_0.5
+%WER 3.91 [ 2125 / 54402, 279 ins, 217 del, 1629 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_fglarge_epoch3/wer_11_1.0
+%WER 3.89 [ 2116 / 54402, 282 ins, 209 del, 1625 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_fglarge_epoch6/wer_11_1.0
+%WER 3.90 [ 2122 / 54402, 281 ins, 205 del, 1636 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_fglarge_epoch9/wer_11_1.0
+%WER 4.03 [ 2193 / 54402, 288 ins, 213 del, 1692 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tglarge_epoch12/wer_11_1.0
+%WER 4.03 [ 2194 / 54402, 267 ins, 239 del, 1688 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tglarge_epoch3/wer_12_1.0
+%WER 4.04 [ 2196 / 54402, 312 ins, 196 del, 1688 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tglarge_epoch6/wer_12_0.5
+%WER 4.03 [ 2190 / 54402, 284 ins, 213 del, 1693 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tglarge_epoch9/wer_11_1.0
+%WER 5.21 [ 2835 / 54402, 306 ins, 329 del, 2200 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tgmed_epoch12/wer_11_0.5
+%WER 5.16 [ 2808 / 54402, 295 ins, 338 del, 2175 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tgmed_epoch3/wer_11_0.5
+%WER 5.20 [ 2831 / 54402, 375 ins, 260 del, 2196 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tgmed_epoch6/wer_10_0.0
+%WER 5.23 [ 2843 / 54402, 382 ins, 256 del, 2205 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tgmed_epoch9/wer_10_0.0
+%WER 5.76 [ 3132 / 54402, 370 ins, 311 del, 2451 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tgsmall_epoch12/wer_12_0.0
+%WER 5.77 [ 3140 / 54402, 393 ins, 294 del, 2453 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tgsmall_epoch3/wer_11_0.0
+%WER 5.79 [ 3149 / 54402, 373 ins, 315 del, 2461 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tgsmall_epoch6/wer_12_0.0
+%WER 5.76 [ 3135 / 54402, 354 ins, 330 del, 2451 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_clean_tgsmall_epoch9/wer_13_0.0
+%WER 10.41 [ 5304 / 50948, 536 ins, 695 del, 4073 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_fglarge_epoch12/wer_14_1.0
+%WER 10.36 [ 5280 / 50948, 591 ins, 637 del, 4052 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_fglarge_epoch3/wer_15_0.5
+%WER 10.42 [ 5309 / 50948, 608 ins, 622 del, 4079 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_fglarge_epoch6/wer_15_0.5
+%WER 10.40 [ 5297 / 50948, 615 ins, 607 del, 4075 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_fglarge_epoch9/wer_15_0.5
+%WER 10.94 [ 5576 / 50948, 665 ins, 650 del, 4261 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tglarge_epoch12/wer_14_0.5
+%WER 10.91 [ 5556 / 50948, 643 ins, 667 del, 4246 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tglarge_epoch3/wer_14_0.5
+%WER 10.90 [ 5551 / 50948, 646 ins, 652 del, 4253 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tglarge_epoch6/wer_14_0.5
+%WER 10.92 [ 5561 / 50948, 664 ins, 644 del, 4253 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tglarge_epoch9/wer_14_0.5
+%WER 13.74 [ 7002 / 50948, 733 ins, 895 del, 5374 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tgmed_epoch12/wer_12_0.0
+%WER 13.64 [ 6949 / 50948, 658 ins, 1027 del, 5264 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tgmed_epoch3/wer_13_0.0
+%WER 13.66 [ 6958 / 50948, 673 ins, 1005 del, 5280 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tgmed_epoch6/wer_13_0.0
+%WER 13.68 [ 6970 / 50948, 685 ins, 998 del, 5287 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tgmed_epoch9/wer_13_0.0
+%WER 14.53 [ 7405 / 50948, 713 ins, 1033 del, 5659 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tgsmall_epoch12/wer_15_0.0
+%WER 14.44 [ 7355 / 50948, 716 ins, 974 del, 5665 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tgsmall_epoch3/wer_14_0.0
+%WER 14.40 [ 7339 / 50948, 730 ins, 941 del, 5668 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tgsmall_epoch6/wer_14_0.0
+%WER 14.50 [ 7388 / 50948, 746 ins, 946 del, 5696 sub ] exp/chain/tdnn_6z_sp_smbr/decode_dev_other_tgsmall_epoch9/wer_14_0.0
+%WER 4.31 [ 2268 / 52576, 326 ins, 208 del, 1734 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_fglarge_epoch12/wer_11_1.0
+%WER 4.29 [ 2257 / 52576, 315 ins, 215 del, 1727 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_fglarge_epoch3/wer_11_1.0
+%WER 4.30 [ 2260 / 52576, 320 ins, 213 del, 1727 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_fglarge_epoch6/wer_11_1.0
+%WER 4.29 [ 2258 / 52576, 324 ins, 210 del, 1724 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_fglarge_epoch9/wer_11_1.0
+%WER 4.51 [ 2371 / 52576, 345 ins, 218 del, 1808 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tglarge_epoch12/wer_13_0.5
+%WER 4.48 [ 2357 / 52576, 366 ins, 203 del, 1788 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tglarge_epoch3/wer_11_0.5
+%WER 4.47 [ 2349 / 52576, 363 ins, 208 del, 1778 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tglarge_epoch6/wer_12_0.5
+%WER 4.50 [ 2365 / 52576, 362 ins, 208 del, 1795 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tglarge_epoch9/wer_12_0.5
+%WER 5.63 [ 2959 / 52576, 402 ins, 297 del, 2260 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tgmed_epoch12/wer_11_0.0
+%WER 5.64 [ 2965 / 52576, 402 ins, 310 del, 2253 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tgmed_epoch3/wer_11_0.0
+%WER 5.61 [ 2947 / 52576, 397 ins, 296 del, 2254 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tgmed_epoch6/wer_11_0.0
+%WER 5.62 [ 2953 / 52576, 391 ins, 323 del, 2239 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tgmed_epoch9/wer_12_0.0
+%WER 6.15 [ 3234 / 52576, 388 ins, 365 del, 2481 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tgsmall_epoch12/wer_11_0.5
+%WER 6.10 [ 3206 / 52576, 430 ins, 316 del, 2460 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tgsmall_epoch3/wer_11_0.0
+%WER 6.13 [ 3223 / 52576, 422 ins, 326 del, 2475 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tgsmall_epoch6/wer_12_0.0
+%WER 6.15 [ 3236 / 52576, 429 ins, 322 del, 2485 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_clean_tgsmall_epoch9/wer_12_0.0
+%WER 10.62 [ 5558 / 52343, 668 ins, 602 del, 4288 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_fglarge_epoch12/wer_13_0.5
+%WER 10.57 [ 5532 / 52343, 659 ins, 625 del, 4248 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_fglarge_epoch3/wer_13_0.5
+%WER 10.58 [ 5540 / 52343, 666 ins, 615 del, 4259 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_fglarge_epoch6/wer_13_0.5
+%WER 10.64 [ 5571 / 52343, 666 ins, 609 del, 4296 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_fglarge_epoch9/wer_13_0.5
+%WER 11.06 [ 5788 / 52343, 580 ins, 770 del, 4438 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tglarge_epoch12/wer_13_1.0
+%WER 11.11 [ 5813 / 52343, 563 ins, 812 del, 4438 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tglarge_epoch3/wer_13_1.0
+%WER 11.07 [ 5793 / 52343, 575 ins, 787 del, 4431 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tglarge_epoch6/wer_13_1.0
+%WER 11.03 [ 5776 / 52343, 577 ins, 774 del, 4425 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tglarge_epoch9/wer_13_1.0
+%WER 13.66 [ 7151 / 52343, 755 ins, 932 del, 5464 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tgmed_epoch12/wer_12_0.0
+%WER 13.60 [ 7120 / 52343, 661 ins, 1077 del, 5382 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tgmed_epoch3/wer_13_0.0
+%WER 13.68 [ 7158 / 52343, 737 ins, 962 del, 5459 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tgmed_epoch6/wer_12_0.0
+%WER 13.64 [ 7141 / 52343, 742 ins, 950 del, 5449 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tgmed_epoch9/wer_12_0.0
+%WER 14.75 [ 7721 / 52343, 895 ins, 841 del, 5985 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tgsmall_epoch12/wer_12_0.0
+%WER 14.64 [ 7664 / 52343, 818 ins, 956 del, 5890 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tgsmall_epoch3/wer_13_0.0
+%WER 14.70 [ 7696 / 52343, 835 ins, 945 del, 5916 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tgsmall_epoch6/wer_13_0.0
+%WER 14.75 [ 7722 / 52343, 892 ins, 849 del, 5981 sub ] exp/chain/tdnn_6z_sp_smbr/decode_test_other_tgsmall_epoch9/wer_12_0.0

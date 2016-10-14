@@ -144,7 +144,7 @@ def GenerateAccuracyPlots(exp_dir, output_dir, plot, key = 'accuracy', file_base
         plt.ylabel(key)
         lgd = plt.legend(plots, loc='lower center', bbox_to_anchor=(0.5, -0.2 + len(dirs) * -0.1 ), ncol=1)
         plt.grid(True)
-        fig.suptitle("{0} plot".format(key))
+        fig.suptitle("Unique Phone Sequence(CTC-RNN Predicted) {0}".format(key))
         figfile_name = '{0}/{1}.png'.format(output_dir, file_basename)
         plt.savefig(figfile_name, bbox_inches='tight', dpi=160)
         if latex_report is not None:

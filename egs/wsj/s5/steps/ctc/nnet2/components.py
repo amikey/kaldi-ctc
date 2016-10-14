@@ -74,7 +74,7 @@ def AddRnnLayer(config_lines, input, hidden_dim,
                  bidirectional = True,
                  num_layers  = 1,
                  rnn_mode = 2,
-                 max_seq_lenght = 1000,
+                 max_seq_length = 1000,
                  learning_rate = 0.0001,
                  param_stddev = 0.02,
                  bias_stddev = 0.2,
@@ -88,7 +88,7 @@ def AddRnnLayer(config_lines, input, hidden_dim,
     output_dim = hidden_dim * 2 if bidirectional else hidden_dim
 
     direction = "bidirectional={0} ".format("true" if bidirectional else "false" )
-    rnn_config = direction + "max-seq-lenght={0} learning-rate={1} ".format(max_seq_lenght, learning_rate)
+    rnn_config = direction + "max-seq-length={0} learning-rate={1} ".format(max_seq_length, learning_rate)
     rnn_config += "rnn-mode={0} num-layers={1} param-stddev={2} bias-stddev={3}".format(rnn_mode, num_layers, param_stddev, bias_stddev)
     components.append("CuDNNRecurrentComponent input-dim={0} output-dim={1} {2} ".format(input_dim, hidden_dim, rnn_config))
     if dropout_proportion > 0:
