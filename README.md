@@ -1,7 +1,7 @@
 # kaldi-ctc
 
 
-Connectionist Temporal Classification (CTC) Automatic Speech Recognition.
+Connectionist Temporal Classification (CTC) Automatic Speech Recognition. `Training` and `Decoding` are extremely fast.
 
 # Intoduction
 kaldi-ctc is based on [kaldi](https://github.com/kaldi-asr/kaldi), [warp-ctc](https://github.com/baidu-research/warp-ctc) and [cudnn](https://developer.nvidia.com/cudnn).
@@ -40,6 +40,12 @@ cd egs/librispeech/ctc
 bash run.sh --stage -2 --num-gpus 4(change to your GPU devices amount)
 ```
 
+### Edit Distance Accuracy
+```
+steps/ctc/report/generate_plots.py exp/ctc/cudnn_google_fs3 reports/ctc-google
+```
+<img src="./egs/librispeech/ctc/reports/ctc-google/accuracy.png" width="500">
+
 ### WER RESULITS (LM tgsmall)
 | Models | Real Time Factor(RTF) | test_clean | dev_clean | test_other | dev_other |
 | -------|:----:|:------:| :-------|:----------:|:----------:|
@@ -48,10 +54,17 @@ bash run.sh --stage -2 --num-gpus 4(change to your GPU devices amount)
 | CTC-character    |  |
 
 
-# TODO
-### Cleanup librispeech corpus, Fine tune parameters
-* CTC-character
+* There are many Out Of Vocabularies(OOVs) in training transcriptions now
 
+```
+awk 'FNR==NR{T[$1]=1;} FNR<NR{for(i=2;i<=NF;i++) {if (!($i in T)) print $i;}}' data/lang_nosp/words.txt   data/train_960/text | sort -u | wc -l
+14291
+```
+
+
+# TODO
+### Cleanup librispeech corpus(Fix OOVs), Fine tune parameters
+### CTC-character example script
 ### FLAT START TRAINING CTC-RNN ACOUSTIC MODELS, CTC-triphone
 * [google - FLAT START TRAINING OF CD-CTC-SMBR LSTM RNN ACOUSTIC MODELS](http://ieeexplore.ieee.org/document/7472710/)
 

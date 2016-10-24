@@ -35,6 +35,8 @@ final_learning_rate=0.00001
 graph_dir=""
 blank_threshold=0.98
 decode_sets="dev_clean dev_other test_clean test_other"
+decode_iter="final"
+decode_suffix=""
 
 nj=20
 
@@ -115,7 +117,7 @@ if [ -z $graph_dir ];then
     mono_opt=""
     $mono && mono_opt="--mono"
 
-    for suffix in tgsmall tgmed;do
+    for suffix in tgsmall;do
       graph_dir=$dir/graph_nosp_$suffix
       if [[ $stage -le 11 && ! -f $graph_dir/CTC.fst ]]; then
         utils/mkgraph.sh --ctc $mono_opt --self-loop-scale 1.0 --remove-oov \
@@ -136,14 +138,14 @@ if [ $stage -le 12 ];then
       steps/compute_cmvn_stats.sh data/${decode_set}_hires || exit 1;
     fi
 
-    for suffix in tgsmall tgmed;do
+    for suffix in tgsmall;do
       graph_dir=$dir/graph_nosp_$suffix
-      decode_dir=$dir/decode_${decode_set}${decode_iter:+_$decode_iter}_$suffix
+      decode_dir=$dir/decode_${decode_set}${decode_iter:+_$decode_iter}_$suffix$decode_suffix
 
       if [ ! -d $decode_dir/scoring ];then
         steps/ctc/decode.sh --feat-type raw --blank-threshold $blank_threshold --stage 0 \
           --scoring-opts "--min-lmwt 1 --max-lmwt 10 --decode-mbr false " \
-          --acwt 1 --lattice-acoustic-scale 10 \
+          --acwt 1 --lattice-acoustic-scale 10 --iter $decode_iter \
           --decode-opts "--beam-delta=3 --prune-interval=20" --beam 20 --lattice-beam 10 \
           --verbose 0 --cmd "$decode_cmd" --nj $num_gpus $graph_dir data/${decode_set}_hires \
           $decode_dir

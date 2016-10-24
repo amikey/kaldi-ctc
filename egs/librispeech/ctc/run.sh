@@ -151,6 +151,8 @@ bash run_ctc_phone.sh --stage 0 --num-gpus $num_gpus --minibatch-size 48 \
     --max-allow-frames 700 --frame-subsampling-factor 3 \
     --suffix "_fs3"
 
+steps/ctc/report/generate_plots.py exp/ctc/cudnn_google_fs3 reports/ctc-google
+
 echo "$0: DONE."
 
 
