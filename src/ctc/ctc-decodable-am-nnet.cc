@@ -40,16 +40,16 @@ CtcDecodableAmNnet::CtcDecodableAmNnet(const CtcTransitionModel &trans_model,
                    (pad_input ? 0 : am_nnet.GetNnet().LeftContext() +
                     am_nnet.GetNnet().RightContext());
   if (num_rows <= 0) {
-    KALDI_WARN << "Input with " << feats.NumRows()  << " rows will produce "
+    KALDI_WARN << "Input with " << feats.NumRows()
+               << " rows will produce "
                << "empty output.";
     return;
   }
   CuMatrix<BaseFloat> log_probs(num_rows, am_nnet.NumPdfs());
-  const Nnet &nnet_base = am_nnet.GetNnet();
 
   // the following function is declared in nnet-compute.h
   KALDI_ASSERT(feats.NumCols() == feats.Stride());
-  NnetComputation(dynamic_cast<const nnet2::Nnet &>(nnet_base), feats, pad_input, &log_probs);
+  NnetComputation(am_nnet.GetNnet(), feats, pad_input, &log_probs);
 
   if (blank_threshold < 1.0) {
     std::vector<int32> keep;
@@ -68,7 +68,7 @@ CtcDecodableAmNnet::CtcDecodableAmNnet(const CtcTransitionModel &trans_model,
     }
   }
 
-  log_probs.ApplyFloor(1.0e-10); // Avoid log of zero which leads to NaN.
+  log_probs.ApplyFloor(1.0e-10);  // Avoid log of zero which leads to NaN.
   log_probs.ApplyLog();
 
   if (am_nnet.Priors().Dim()) {
@@ -88,11 +88,9 @@ CtcDecodableAmNnet::CtcDecodableAmNnet(const CtcTransitionModel &trans_model,
 
 void CtcDecodableAmNnetParallel::Compute() {
   log_probs_.Resize(feats_->NumRows(), am_nnet_.NumPdfs());
+  NnetComputation(am_nnet_.GetNnet(), *feats_, pad_input_, &log_probs_);
 
-  const Nnet &nnet_base = am_nnet_.GetNnet();
-  NnetComputation(dynamic_cast<const nnet2::Nnet &>(nnet_base), *feats_, pad_input_, &log_probs_);
-
-  log_probs_.ApplyFloor(1.0e-20); // Avoid log of zero which leads to NaN.
+  log_probs_.ApplyFloor(1.0e-20);  // Avoid log of zero which leads to NaN.
   log_probs_.ApplyLog();
 
   if (am_nnet_.Priors().Dim()) {
@@ -108,5 +106,5 @@ void CtcDecodableAmNnetParallel::Compute() {
   feats_ = NULL;
 }
 
-} // namespace ctc
-} // namespace kaldi
+}  // namespace ctc
+}  // namespace kaldi

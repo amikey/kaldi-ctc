@@ -59,7 +59,8 @@ struct NnetSimpleTrainerConfig {
     opts->Register("max-param-change", &max_param_change, "The maximum change in"
                    "parameters allowed per minibatch, measured in Frobenius norm "
                    "over the entire model (change will be clipped to this value)");
-    opts->Register("max-allow-frames", &max_allow_frames, "The maximum frames length"
+    opts->Register("max-allow-frames", &max_allow_frames,
+                   "The maximum frames length"
                    "parameters allowed per minibatch");
   }
 };
@@ -78,7 +79,7 @@ int64 TrainNnetSimple(const NnetSimpleTrainerConfig &config,
                       double *tot_weight = NULL,
                       double *tot_logprob = NULL);
 
-} // namespace ctc
-} // namespace kaldi
+}  // namespace ctc
+}  // namespace kaldi
 
 #endif

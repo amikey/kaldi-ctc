@@ -43,7 +43,7 @@ class CtcTransitionModel {
   CtcTransitionModel() { }
 
   CtcTransitionModel(const ContextDependencyInterface &ctx_dep,
-                  const HmmTopology &hmm_topo): trans_model_(ctx_dep, hmm_topo) {}
+                     const HmmTopology &hmm_topo): trans_model_(ctx_dep, hmm_topo) {}
 
   int32 NumPhones() const {
     return trans_model_.NumPhones();
@@ -95,7 +95,7 @@ class CtcTransitionModel {
   }
 
  protected:
-  TransitionModel trans_model_; // context dependent phone model for CTC
+  TransitionModel trans_model_;  // context dependent phone model for CTC
 };
 
 }  // namespace ctc

@@ -40,7 +40,8 @@ int main(int argc, char *argv[]) {
 
     bool add_phone_loop = false;
     ParseOptions po(usage);
-    po.Register("add-phone-loop", &add_phone_loop, "Add phone loop in CTC decoding graph.");
+    po.Register("add-phone-loop", &add_phone_loop,
+                "Add phone loop in CTC decoding graph.");
 
     po.Read(argc, argv);
 

@@ -89,13 +89,16 @@ int main(int argc, char *argv[]) {
         input_block.Range(0, context, basic_dim, spk_dim).CopyRowsFromVec(
           eg.spk_info);
       }
-      CuMatrix<BaseFloat> gpu_input_block(input_block.NumRows(), input_block.NumCols(), kUndefined,
+      CuMatrix<BaseFloat> gpu_input_block(input_block.NumRows(),
+                                          input_block.NumCols(), kUndefined,
                                           kStrideEqualNumCols);
       gpu_input_block.CopyFromMat(input_block);
-      CuMatrix<BaseFloat> gpu_output_block(gpu_input_block.NumRows() - left_context - nnet.RightContext(),
+      CuMatrix<BaseFloat> gpu_output_block(gpu_input_block.NumRows() - left_context -
+                                           nnet.RightContext(),
                                            nnet.OutputDim());
       bool pad_input = false;
-      NnetComputation(dynamic_cast<nnet2::Nnet &>(nnet), gpu_input_block, pad_input, &gpu_output_block);
+      NnetComputation(dynamic_cast<nnet2::Nnet &>(nnet), gpu_input_block, pad_input,
+                      &gpu_output_block);
 
       writer.Write("global", Matrix<BaseFloat>(gpu_output_block));
       num_egs++;

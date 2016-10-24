@@ -86,7 +86,8 @@ int main(int argc, char *argv[]) {
     } else {
       KALDI_ASSERT(buffer_size > 0);
       egs.resize(buffer_size,
-                 std::pair<std::string, NnetCtcExample*>("", static_cast<NnetCtcExample *>(NULL)));
+                 std::pair<std::string, NnetCtcExample*>("",
+                     static_cast<NnetCtcExample *>(NULL)));
       for (; !example_reader.Done(); example_reader.Next(), num_read++) {
         if (num_read > 0 && (num_read % buffer_size == 0)) {
           std::sort(egs.begin(), egs.end(), SortNnetCtcExample);

@@ -18,8 +18,8 @@
 // See the Apache 2 License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef KALDI_CTC_DECODABLE_AM_NNET_H_
-#define KALDI_CTC_DECODABLE_AM_NNET_H_
+#ifndef KALDI_CTC_CTC_DECODABLE_AM_NNET_H_
+#define KALDI_CTC_CTC_DECODABLE_AM_NNET_H_
 
 #include <vector>
 #include "base/kaldi-common.h"
@@ -68,7 +68,8 @@ class CtcDecodableAmNnet: public DecodableInterface {
  protected:
   const CtcTransitionModel &trans_model_;
   const AmNnet &am_nnet_;
-  Matrix<BaseFloat> log_probs_; // actually not really probabilities, since we divide
+  Matrix<BaseFloat>
+  log_probs_;  // actually not really probabilities, since we divide
   // by the prior -> they won't sum to one.
 
   KALDI_DISALLOW_COPY_AND_ASSIGN(CtcDecodableAmNnet);
@@ -98,14 +99,15 @@ class CtcDecodableAmNnetParallel: public DecodableInterface {
   // Note, frames are numbered from zero.  But state_index is numbered
   // from one (this routine is called by FSTs).
   virtual BaseFloat LogLikelihood(int32 frame, int32 tid) {
-    if (feats_) Compute(); // this function sets feats_ to NULL.
+    if (feats_) Compute();  // this function sets feats_ to NULL.
     return log_probs_(frame, trans_model_.TransitionIdToPdf(tid));
   }
 
   int32 NumFramesReady() const {
     if (feats_) {
-      if (pad_input_) return feats_->NumRows();
-      else {
+      if (pad_input_) {
+        return feats_->NumRows();
+      } else {
         int32 ans = feats_->NumRows() - am_nnet_.GetNnet().LeftContext() -
                     am_nnet_.GetNnet().RightContext();
         if (ans < 0) ans = 0;
@@ -131,7 +133,8 @@ class CtcDecodableAmNnetParallel: public DecodableInterface {
  protected:
   const CtcTransitionModel &trans_model_;
   const AmNnet &am_nnet_;
-  CuMatrix<BaseFloat> log_probs_; // actually not really probabilities, since we divide
+  // actually not really probabilities, since we divide
+  CuMatrix<BaseFloat> log_probs_;
   // by the prior -> they won't sum to one.
   const CuMatrix<BaseFloat> *feats_;
   bool pad_input_;
@@ -140,7 +143,7 @@ class CtcDecodableAmNnetParallel: public DecodableInterface {
 };
 
 
-} // namespace ctc
-} // namespace kaldi
+}  // namespace ctc
+}  // namespace kaldi
 
-#endif  // KALDI_CTC_DECODABLE_AM_NNET_H_
+#endif  // KALDI_CTC_CTC_DECODABLE_AM_NNET_H_

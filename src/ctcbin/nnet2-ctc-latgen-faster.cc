@@ -61,8 +61,10 @@ int main(int argc, char *argv[]) {
 
     std::string word_syms_filename;
     config.Register(&po);
-    po.Register("acoustic-scale", &acoustic_scale, "Scaling factor for acoustic likelihoods");
-    po.Register("word-symbol-table", &word_syms_filename, "Symbol table for words [for debug output]");
+    po.Register("acoustic-scale", &acoustic_scale,
+                "Scaling factor for acoustic likelihoods");
+    po.Register("word-symbol-table", &word_syms_filename,
+                "Symbol table for words [for debug output]");
     po.Register("allow-partial", &allow_partial,
                 "If true, produce output even if end state was not reached.");
     po.Register("blank-threshold", &blank_threshold,
@@ -73,7 +75,8 @@ int main(int argc, char *argv[]) {
                 "in the supervision data (excluding iVector data) - useful in "
                 "augmenting data.  Note, the outputs will remain at the closest "
                 "exact multiples of the frame subsampling factor");
-    po.Register("frame-subsampling-factor", &frame_subsampling_factor, "the frame subsampling factor");
+    po.Register("frame-subsampling-factor", &frame_subsampling_factor,
+                "the frame subsampling factor");
 
     po.Read(argc, argv);
 
@@ -145,12 +148,15 @@ int main(int argc, char *argv[]) {
           CuMatrix<BaseFloat> feats;
           if (frame_subsampling_factor > 1) {
             Matrix<BaseFloat> features_cpu(features);
-            FrameSubsamplingShiftFeatureTimes(frame_subsampling_factor, frame_shift, features_cpu);
-            feats.Resize(features_cpu.NumRows(), features_cpu.NumCols(), kUndefined, kStrideEqualNumCols);
-            feats.CopyFromMat(features_cpu);                        
+            FrameSubsamplingShiftFeatureTimes(frame_subsampling_factor, frame_shift,
+                                              features_cpu);
+            feats.Resize(features_cpu.NumRows(), features_cpu.NumCols(), kUndefined,
+                         kStrideEqualNumCols);
+            feats.CopyFromMat(features_cpu);
           } else {
-            feats.Resize(features.NumRows(), features.NumCols(), kUndefined, kStrideEqualNumCols);
-            feats.CopyFromMat(features);            
+            feats.Resize(features.NumRows(), features.NumCols(), kUndefined,
+                         kStrideEqualNumCols);
+            feats.CopyFromMat(features);
           }
 
           CtcDecodableAmNnet nnet_decodable(trans_model,
@@ -196,12 +202,15 @@ int main(int argc, char *argv[]) {
         CuMatrix<BaseFloat> feats;
         if (frame_subsampling_factor > 1) {
           Matrix<BaseFloat> features_cpu(features);
-          FrameSubsamplingShiftFeatureTimes(frame_subsampling_factor, frame_shift, features_cpu);
-          feats.Resize(features_cpu.NumRows(), features_cpu.NumCols(), kUndefined, kStrideEqualNumCols);
-          feats.CopyFromMat(features_cpu);                        
+          FrameSubsamplingShiftFeatureTimes(frame_subsampling_factor, frame_shift,
+                                            features_cpu);
+          feats.Resize(features_cpu.NumRows(), features_cpu.NumCols(), kUndefined,
+                       kStrideEqualNumCols);
+          feats.CopyFromMat(features_cpu);
         } else {
-          feats.Resize(features.NumRows(), features.NumCols(), kUndefined, kStrideEqualNumCols);
-          feats.CopyFromMat(features);            
+          feats.Resize(features.NumRows(), features.NumCols(), kUndefined,
+                       kStrideEqualNumCols);
+          feats.CopyFromMat(features);
         }
 
         CtcDecodableAmNnet nnet_decodable(trans_model,
@@ -232,8 +241,8 @@ int main(int argc, char *argv[]) {
               << (elapsed*100.0/frame_count);
     KALDI_LOG << "Done " << num_success << " utterances, failed for "
               << num_fail;
-    KALDI_LOG << "Overall log-likelihood per frame is " << (tot_like/frame_count) << " over "
-              << frame_count<<" frames.";
+    KALDI_LOG << "Overall log-likelihood per frame is " << (tot_like/frame_count)
+              << " over " << frame_count<<" frames.";
 
     delete word_syms;
     if (num_success != 0) return 0;

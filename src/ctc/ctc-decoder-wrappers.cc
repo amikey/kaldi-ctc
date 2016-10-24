@@ -37,7 +37,7 @@ bool DecodeUtteranceLatticeFasterCtc(
   Int32VectorWriter *words_writer,
   CompactLatticeWriter *compact_lattice_writer,
   LatticeWriter *lattice_writer,
-  double *like_ptr) { // puts utterance's like in like_ptr on success.
+  double *like_ptr) {  // puts utterance's like in like_ptr on success.
   using fst::VectorFst;
 
   if (!decoder.Decode(&decodable)) {
@@ -91,7 +91,8 @@ bool DecodeUtteranceLatticeFasterCtc(
   Lattice lat;
   decoder.GetRawLattice(&lat);
   if (lat.NumStates() == 0)
-    KALDI_ERR << "Unexpected problem getting lattice for utterance " << utt;
+    KALDI_ERR << "Unexpected problem getting lattice for utterance "
+              << utt;
   fst::Connect(&lat);
   if (determinize) {
     CompactLattice clat;
@@ -105,12 +106,14 @@ bool DecodeUtteranceLatticeFasterCtc(
                  << "utterance " << utt;
     // We'll write the lattice without acoustic scaling.
     if (acoustic_scale != 0.0)
-      fst::ScaleLattice(fst::AcousticLatticeScale(1.0 / acoustic_scale), &clat);
+      fst::ScaleLattice(fst::AcousticLatticeScale(1.0 / acoustic_scale),
+                        &clat);
     compact_lattice_writer->Write(utt, clat);
   } else {
     // We'll write the lattice without acoustic scaling.
     if (acoustic_scale != 0.0)
-      fst::ScaleLattice(fst::AcousticLatticeScale(1.0 / acoustic_scale), &lat);
+      fst::ScaleLattice(fst::AcousticLatticeScale(1.0 / acoustic_scale),
+                        &lat);
     lattice_writer->Write(utt, lat);
   }
   KALDI_LOG << "Log-like per frame for utterance " << utt << " is "
@@ -122,4 +125,4 @@ bool DecodeUtteranceLatticeFasterCtc(
   return true;
 }
 
-} // end namespace kaldi.
+}  // end namespace kaldi.

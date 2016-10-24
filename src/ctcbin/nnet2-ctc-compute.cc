@@ -79,12 +79,14 @@ int main(int argc, char *argv[]) {
       // read
       Matrix<BaseFloat> input_block = feature_reader.Value();
       std::string utt = feature_reader.Key();
-      CuMatrix<BaseFloat> gpu_input_block(input_block.NumRows(), input_block.NumCols(), kUndefined,
+      CuMatrix<BaseFloat> gpu_input_block(input_block.NumRows(),
+                                          input_block.NumCols(), kUndefined,
                                           kStrideEqualNumCols);
       gpu_input_block.CopyFromMat(input_block);
       CuMatrix<BaseFloat> gpu_output_block(1, nnet.OutputDim());
       bool pad_input = false;
-      NnetComputation(dynamic_cast<nnet2::Nnet &>(nnet), gpu_input_block, pad_input, &gpu_output_block);
+      NnetComputation(dynamic_cast<nnet2::Nnet &>(nnet), gpu_input_block, pad_input,
+                      &gpu_output_block);
 
       writer.Write(utt, Matrix<BaseFloat>(gpu_output_block));
       num_egs++;

@@ -107,10 +107,10 @@ class NnetCtcUpdater {
 
   const Nnet &nnet_;
   Nnet *nnet_to_update_;
-  int32 num_chunks_; // same as the minibatch size.
+  int32 num_chunks_;  // same as the minibatch size.
   std::vector<nnet2::ChunkInfo> chunk_info_out_;
 
-  std::vector<CuMatrix<BaseFloat> > forward_data_; // The forward data
+  std::vector<CuMatrix<BaseFloat> > forward_data_;  // The forward data
   // for the outputs of each of the components.
 
 };
@@ -179,7 +179,7 @@ double ComputeNnetObjf(const Nnet &nnet,
                        int32 minibatch_size,
                        double *tot_accuracy= NULL);
 
-} // namespace ctc
-} // namespace kaldi
+}  // namespace ctc
+}  // namespace kaldi
 
 #endif // KALDI_CTC_CTC_NNET_UPDATE_H_

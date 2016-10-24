@@ -55,7 +55,7 @@ bool DecodeUtteranceLatticeFasterCtc(
   double *like_ptr);  // puts utterance's likelihood in like_ptr on success.
 
 
-} // end namespace kaldi.
+}  // end namespace kaldi.
 
 
 #endif

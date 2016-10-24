@@ -59,7 +59,8 @@ void NnetCtcExample::Read(std::istream &is, bool binary) {
   ExpectToken(is, binary, "</NnetCtcExample>");
 }
 
-static bool nnet_example_warned_left = false, nnet_example_warned_right = false;
+static bool nnet_example_warned_left = false,
+            nnet_example_warned_right = false;
 
 void NnetCtcExample::SetLabels(const std::vector<int32> &alignment) {
   KALDI_ASSERT(alignment.size() <= input_frames.NumRows());
@@ -67,15 +68,20 @@ void NnetCtcExample::SetLabels(const std::vector<int32> &alignment) {
 }
 
 
-bool SortNnetCtcExampleByNumFrames(const std::pair<std::string, NnetCtcExample> &e1,
+bool SortNnetCtcExampleByNumFrames(const
+                                   std::pair<std::string, NnetCtcExample>
+                                   &e1,
                                    const std::pair<std::string, NnetCtcExample> &e2) {
   return e1.second.NumFrames() < e2.second.NumFrames();
 }
 
-void FrameSubsamplingShiftFeatureTimes(int32 frame_subsampling_factor, int32 frame_shift, Matrix<BaseFloat> &feature) {
+void FrameSubsamplingShiftFeatureTimes(int32 frame_subsampling_factor,
+                                       int32 frame_shift,
+                                       Matrix<BaseFloat> &feature) {
   Matrix<BaseFloat> full_src(feature);
   std::vector<int32> indexs;
-  for (int i = 0; i + frame_shift < full_src.NumRows(); i += frame_subsampling_factor) {
+  for (int i = 0; i + frame_shift < full_src.NumRows();
+       i += frame_subsampling_factor) {
     indexs.push_back(i + frame_shift);
   }
   if (indexs.size() == 0)
@@ -85,12 +91,17 @@ void FrameSubsamplingShiftFeatureTimes(int32 frame_subsampling_factor, int32 fra
   feature.CopyRows(full_src, &(indexs[0]));
 }
 
-void FrameSubsamplingShiftNnetCtcExampleTimes(int32 frame_subsampling_factor, int32 frame_shift, NnetCtcExample *eg) {
+void FrameSubsamplingShiftNnetCtcExampleTimes(
+    int32 frame_subsampling_factor,
+    int32 frame_shift,
+    NnetCtcExample *eg) {
   if (frame_subsampling_factor <= 1)
     return;
   KALDI_ASSERT(frame_shift < frame_subsampling_factor);
   Matrix<BaseFloat> full_src(eg->input_frames);
-  FrameSubsamplingShiftFeatureTimes(frame_subsampling_factor, frame_shift, full_src);
+  FrameSubsamplingShiftFeatureTimes(frame_subsampling_factor,
+                                    frame_shift,
+                                    full_src);
   eg->input_frames = full_src;
 }
 
@@ -115,9 +126,9 @@ bool ExamplesRepository::ProvideExamples(
   full_semaphore_.Wait();
   if (done_) {
     KALDI_ASSERT(examples_.empty());
-    full_semaphore_.Signal(); // Increment the semaphore so
+    full_semaphore_.Signal();  // Increment the semaphore so
     // the call by the next thread will not block.
-    return false; // no examples to return-- all finished.
+    return false;  // no examples to return-- all finished.
   } else {
     KALDI_ASSERT(!examples_.empty() && examples->empty());
     examples->swap(examples_);
@@ -142,9 +153,8 @@ void DiscriminativeNnetCtcExample::Write(std::ostream &os,
     KALDI_ERR << "Error writing CompactLattice to stream";
   }
   WriteToken(os, binary, "<InputFrames>");
-  {
-    CompressedMatrix cm(input_frames); // Note: this can be read as a regular
-    // matrix.
+  { // Note: this can be read as a regular matrix.
+    CompressedMatrix cm(input_frames);
     cm.Write(os, binary);
   }
   WriteToken(os, binary, "<LeftContext>");
@@ -164,7 +174,8 @@ void DiscriminativeNnetCtcExample::Read(std::istream &is,
   ExpectToken(is, binary, "<NumAli>");
   ReadIntegerVector(is, binary, &num_ali);
   CompactLattice *den_lat_tmp = NULL;
-  if (!ReadCompactLattice(is, binary, &den_lat_tmp) || den_lat_tmp == NULL) {
+  if (!ReadCompactLattice(is, binary, &den_lat_tmp)
+      || den_lat_tmp == NULL) {
     // We can't return error status from this function so we
     // throw an exception.
     KALDI_ERR << "Error reading CompactLattice from stream";
@@ -193,5 +204,5 @@ void DiscriminativeNnetCtcExample::Check() const {
 }
 
 
-} // namespace ctc
-} // namespace kaldi
+}  // namespace ctc
+}  // namespace kaldi

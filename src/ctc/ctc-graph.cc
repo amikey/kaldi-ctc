@@ -27,7 +27,8 @@
 namespace kaldi {
 namespace ctc {
 
-void ShiftPhonesAndAddBlanks(fst::StdVectorFst *fst, bool add_phone_loop) {
+void ShiftPhonesAndAddBlanks(fst::StdVectorFst *fst,
+                             bool add_phone_loop) {
   typedef fst::MutableArcIterator<fst::StdVectorFst > IterType;
 
   if (!add_phone_loop) {
@@ -51,7 +52,7 @@ void ShiftPhonesAndAddBlanks(fst::StdVectorFst *fst, bool add_phone_loop) {
         } else {
           epsilon_arcs.push_back(arc);
         }
-        if (arc.nextstate == state) {  //self-loop
+        if (arc.nextstate == state) {  // self-loop
           KALDI_ASSERT(arc.ilabel != 0);
           self_loop_arcs.push_back(arc);
         }
@@ -116,14 +117,16 @@ void ShiftPhonesAndAddBlanks(fst::StdVectorFst *fst, bool add_phone_loop) {
     for (int32 state = 0; state < num_states; state++) {
       for (IterType aiter(fst, state); !aiter.Done(); aiter.Next()) {
         fst::StdArc arc(aiter.Value());
-        if (arc.ilabel > 1) { // phone id
+        if (arc.ilabel > 1) {  // phone id
           int32 new_state = fst->AddState();
           int32 next_state = arc.nextstate;
           arc.nextstate = new_state;
           aiter.SetValue(arc);
-          
+
           // add phone loop
-          fst->AddArc(new_state, fst::StdArc(arc.ilabel, 0, fst::StdArc::Weight::One(), new_state));
+          fst->AddArc(new_state, fst::StdArc(arc.ilabel, 0,
+                                             fst::StdArc::Weight::One(),
+                                             new_state));
 
           // add epsilon arc
           epsilon_loop_arc.nextstate = next_state;
@@ -135,7 +138,8 @@ void ShiftPhonesAndAddBlanks(fst::StdVectorFst *fst, bool add_phone_loop) {
 }
 
 
-void CtcGraphInfo(const TransitionModel &trans_model, const fst::StdVectorFst &fst) {
+void CtcGraphInfo(const TransitionModel &trans_model,
+                  const fst::StdVectorFst &fst) {
   typedef fst::ArcIterator<fst::StdVectorFst > IterType;
   int32 num_states = fst.NumStates();
   for (int32 state = 0; state < num_states; state++) {
@@ -143,7 +147,8 @@ void CtcGraphInfo(const TransitionModel &trans_model, const fst::StdVectorFst &f
     for (IterType aiter(fst, state); !aiter.Done(); aiter.Next()) {
       fst::StdArc arc(aiter.Value());
       if (arc.ilabel != 0 && arc.ilabel != 1) {
-        KALDI_LOG << "ilabel " << arc.ilabel << ", phone " << trans_model.TransitionIdToPhone(arc.ilabel - 1);
+        KALDI_LOG << "ilabel " << arc.ilabel << ", phone "
+                  << trans_model.TransitionIdToPhone(arc.ilabel - 1);
       }
     }
   }
@@ -252,8 +257,8 @@ bool DeterminizeLatticePhonePrunedCtc(
   // Make sure at least one of opts.phone_determinize and opts.word_determinize
   // is not false, otherwise calling this function doesn't make any sense.
   if ((opts.phone_determinize || opts.word_determinize) == false) {
-    KALDI_WARN << "Both --phone-determinize and --word-determinize are set to "
-               << "false, copying lattice without determinization.";
+    KALDI_WARN << "Both --phone-determinize and --word-determinize are "
+               << "set to false, copying lattice without determinization.";
     // We are expecting the words on the input side.
     ConvertLattice<Weight, IntType>(*ifst, ofst, false);
     return ans;
@@ -318,7 +323,8 @@ bool DeterminizeLatticePhonePrunedWrapperCtc(
   }
   ILabelCompare<kaldi::LatticeArc> ilabel_comp;
   ArcSort(ifst, ilabel_comp);
-  ans = DeterminizeLatticePhonePrunedCtc<kaldi::LatticeWeight, kaldi::int32>(
+  ans = DeterminizeLatticePhonePrunedCtc<kaldi::LatticeWeight, kaldi::int32>
+        (
           trans_model, ifst, beam, ofst, opts);
   Connect(ofst);
   return ans;

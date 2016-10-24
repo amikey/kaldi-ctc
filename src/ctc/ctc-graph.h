@@ -53,11 +53,13 @@ namespace ctc {
                               (blank-plus-one) on the input and 0 (epsilon) on
                               the output.
 */
-void ShiftPhonesAndAddBlanks(fst::StdVectorFst *fst, bool add_phone_loop = false);
+void ShiftPhonesAndAddBlanks(fst::StdVectorFst *fst,
+                             bool add_phone_loop = false);
 
 /** This is a Debug function
 */
-void CtcGraphInfo(const TransitionModel &trans_model, const fst::StdVectorFst &fst);
+void CtcGraphInfo(const TransitionModel &trans_model,
+                  const fst::StdVectorFst &fst);
 
 /** This is a Ctc version of the function DeterminizeLatticePhonePrunedWrapper,
     declared in ../lat/determinize-lattice-pruned.h.  It can be used

@@ -51,9 +51,9 @@ int main(int argc, char *argv[]) {
 #endif
 
     std::string tree_filename = po.GetArg(1),
-      topo_filename = po.GetArg(2),
-      raw_nnet_rxfilename  = po.GetArg(3),
-      ctc_model_wxfilename = po.GetArg(4);
+                topo_filename = po.GetArg(2),
+                raw_nnet_rxfilename  = po.GetArg(3),
+                ctc_model_wxfilename = po.GetArg(4);
 
     ContextDependency ctx_dep;
     ReadKaldiObject(tree_filename, &ctx_dep);

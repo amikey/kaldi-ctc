@@ -52,7 +52,8 @@ int main(int argc, char *argv[]) {
                 "in the supervision data (excluding iVector data) - useful in "
                 "augmenting data.  Note, the outputs will remain at the closest "
                 "exact multiples of the frame subsampling factor");
-    po.Register("frame-subsampling-factor", &frame_subsampling_factor, "the frame subsampling factor");
+    po.Register("frame-subsampling-factor", &frame_subsampling_factor,
+                "the frame subsampling factor");
     po.Read(argc, argv);
 
     srand(srand_seed);
@@ -83,7 +84,8 @@ int main(int argc, char *argv[]) {
     } else {
       KALDI_ASSERT(buffer_size > 0);
       egs.resize(buffer_size,
-                 std::pair<std::string, NnetCtcExample*>("", static_cast<NnetCtcExample *>(NULL)));
+                 std::pair<std::string, NnetCtcExample*>("",
+                     static_cast<NnetCtcExample *>(NULL)));
       for (; !example_reader.Done(); example_reader.Next()) {
         int32 index = RandInt(0, buffer_size - 1);
         if (egs[index].second == NULL) {
@@ -91,7 +93,8 @@ int main(int argc, char *argv[]) {
                                       new NnetCtcExample(example_reader.Value()));
         } else {
           if (frame_subsampling_factor > 0)
-            FrameSubsamplingShiftNnetCtcExampleTimes(frame_subsampling_factor, frame_shift, egs[index].second);
+            FrameSubsamplingShiftNnetCtcExampleTimes(frame_subsampling_factor, frame_shift,
+                egs[index].second);
           example_writer.Write(egs[index].first, *(egs[index].second));
           egs[index].first = example_reader.Key();
           *(egs[index].second) = example_reader.Value();
@@ -102,7 +105,8 @@ int main(int argc, char *argv[]) {
     for (size_t i = 0; i < egs.size(); i++) {
       if (egs[i].second != NULL) {
         if (frame_subsampling_factor > 1)
-          FrameSubsamplingShiftNnetCtcExampleTimes(frame_subsampling_factor, frame_shift, egs[i].second);
+          FrameSubsamplingShiftNnetCtcExampleTimes(frame_subsampling_factor, frame_shift,
+              egs[i].second);
         example_writer.Write(egs[i].first, *(egs[i].second));
         delete egs[i].second;
         num_done++;

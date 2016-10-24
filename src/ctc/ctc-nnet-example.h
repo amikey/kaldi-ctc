@@ -73,17 +73,24 @@ struct NnetCtcExample {
 
 
 typedef TableWriter<KaldiObjectHolder<NnetCtcExample > > NnetCtcExampleWriter;
-typedef SequentialTableReader<KaldiObjectHolder<NnetCtcExample > > SequentialNnetCtcExampleReader;
+typedef SequentialTableReader<KaldiObjectHolder<NnetCtcExample > >
+SequentialNnetCtcExampleReader;
 typedef RandomAccessTableReader<KaldiObjectHolder<NnetCtcExample > >
 RandomAccessNnetCtcExampleReader;
 
 
-bool SortNnetCtcExampleByNumFrames(const std::pair<std::string, NnetCtcExample> &e1,
+bool SortNnetCtcExampleByNumFrames(const
+                                   std::pair<std::string, NnetCtcExample>
+                                   &e1,
                                    const std::pair<std::string, NnetCtcExample> &e2);
 
-void FrameSubsamplingShiftFeatureTimes(int32 frame_subsampling_factor, int32 frame_shift, Matrix<BaseFloat> &feature);
+void FrameSubsamplingShiftFeatureTimes(int32 frame_subsampling_factor,
+                                       int32 frame_shift,
+                                       Matrix<BaseFloat> &feature);
 
-void FrameSubsamplingShiftNnetCtcExampleTimes(int32 frame_subsampling_factor, int32 frame_shift, NnetCtcExample *eg);
+void FrameSubsamplingShiftNnetCtcExampleTimes(int32 frame_subsampling_factor,
+    int32 frame_shift,
+    NnetCtcExample *eg);
 
 /** This class stores neural net training examples to be used in
     multi-threaded training.  */
@@ -161,7 +168,7 @@ struct DiscriminativeNnetCtcExample {
   /// features, if used.
   Vector<BaseFloat> spk_info;
 
-  void Check() const; // will crash if invalid.
+  void Check() const;  // will crash if invalid.
 
   void Write(std::ostream &os, bool binary) const;
   void Read(std::istream &is, bool binary);
@@ -177,6 +184,6 @@ RandomAccessDiscriminativeNnetCtcExampleReader;
 
 
 }
-} // namespace
+}  // namespace
 
 #endif // KALDI_CTC_CTC_NNET_EXAMPLE_H_

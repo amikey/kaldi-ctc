@@ -60,7 +60,7 @@ class NnetCtcExampleBackgroundReader {
     if (pthread_join(thread_, NULL))
       KALDI_ERR << "Error rejoining thread.";
     KALDI_LOG << "max_frames = " << max_frames_
-      << ", skiped " << num_skiped_example_ << " examples.";
+              << ", skiped " << num_skiped_example_ << " examples.";
   }
 
   // This will be called in a background thread.  It's responsible for
@@ -79,10 +79,12 @@ class NnetCtcExampleBackgroundReader {
       examples_.clear();
       examples_.reserve(minibatch_size);
       // Read the examples.
-      for (; examples_.size() < minibatch_size && !reader_->Done(); reader_->Next()) {
+      for (; examples_.size() < minibatch_size
+           && !reader_->Done(); reader_->Next()) {
         int32 num_frames = reader_->Value().NumFrames();
         int32 num_labels = reader_->Value().NumLabels();
-        if (num_frames > max_frames_ || num_labels > MAX_WARPCTC_LABEL_LENGTH) {
+        if (num_frames > max_frames_
+            || num_labels > MAX_WARPCTC_LABEL_LENGTH) {
           num_skiped_example_++;
           continue;
         } else if (num_frames < 2 * num_labels + 1) {
@@ -183,8 +185,9 @@ int64 TrainNnetSimple(const NnetSimpleTrainerConfig &config,
                       double *tot_logprob_ptr) {
   int64 num_egs_processed = 0;
   double tot_weight = 0.0, tot_logprob = 0.0, tot_accuracy = 0.0;
-  NnetCtcExampleBackgroundReader background_reader(config.minibatch_size,
-      nnet, reader, config.max_allow_frames);
+  NnetCtcExampleBackgroundReader background_reader(
+    config.minibatch_size,
+    nnet, reader, config.max_allow_frames);
   KALDI_ASSERT(config.minibatches_per_phase > 0);
   KALDI_ASSERT(config.max_param_change > 0);
   KALDI_ASSERT(config.momentum >= 0 && config.momentum < 1.0);
@@ -192,7 +195,7 @@ int64 TrainNnetSimple(const NnetSimpleTrainerConfig &config,
   if (config.momentum != 0) {
     KALDI_ASSERT(config.momentum >= 0 && config.momentum < 1);
     KALDI_LOG << "Nnet2 RNN momentum " << config.momentum << " training.";
-    delta_nnet = new nnet2::Nnet(*dynamic_cast<nnet2::Nnet*>(nnet));
+    delta_nnet = new nnet2::Nnet(*nnet);
     KALDI_ASSERT(delta_nnet != NULL);
     bool treat_as_gradient = false;
     delta_nnet->SetZero(treat_as_gradient);
@@ -202,18 +205,22 @@ int64 TrainNnetSimple(const NnetSimpleTrainerConfig &config,
     // Iterate over phases.  A phase of training is just a certain number of
     // minibatches, and its only significance is that it's the periodicity with
     // which we print diagnostics.
-    double tot_weight_this_phase = 0.0, tot_logprob_this_phase = 0.0, tot_accuracy_this_phase = 0.0;
+    double tot_weight_this_phase = 0.0, tot_logprob_this_phase = 0.0,
+           tot_accuracy_this_phase = 0.0;
 
     int32 i;
     for (i = 0; i < config.minibatches_per_phase; i++) {
       std::vector<NnetCtcExample> examples;
       Matrix<BaseFloat> examples_formatted;
       double minibatch_total_weight, minibatch_total_accuracy;
-      if (!background_reader.GetNextMinibatch(&examples, &examples_formatted,
+      if (!background_reader.GetNextMinibatch(&examples,
+                                              &examples_formatted,
                                               &minibatch_total_weight))
         break;
-      tot_logprob_this_phase += DoBackprop(*nnet, examples, &examples_formatted,
-                                           (delta_nnet == NULL) ? nnet : delta_nnet, &minibatch_total_accuracy);
+      tot_logprob_this_phase += DoBackprop(*nnet, examples,
+                                           &examples_formatted,
+                                           (delta_nnet == NULL) ? nnet : delta_nnet,
+                                           &minibatch_total_accuracy);
 
       if (delta_nnet != NULL) {
         // BaseFloat scale = (1.0 - config.momentum);
@@ -233,7 +240,7 @@ int64 TrainNnetSimple(const NnetSimpleTrainerConfig &config,
         //     }
         //   }
         // }
-        dynamic_cast<nnet2::Nnet *>(nnet)->AddNnet(1.0, *delta_nnet);
+        nnet->AddNnet(1.0, *delta_nnet);
         delta_nnet->Scale(config.momentum);
       }
 
@@ -253,7 +260,9 @@ int64 TrainNnetSimple(const NnetSimpleTrainerConfig &config,
     tot_accuracy += tot_accuracy_this_phase;
 
     if (tot_weight_this_phase != 0.0)
-      KALDI_VLOG(1) << "tot_accuracy_this_phase = " << tot_accuracy_this_phase / tot_weight_this_phase;
+      KALDI_VLOG(1) << "tot_accuracy_this_phase = " <<
+                    tot_accuracy_this_phase /
+                    tot_weight_this_phase;
     if (i != config.minibatches_per_phase) {
       // did not get all the minibatches we wanted because no more input.
       // this is true if and only if we did "break" in the loop over i above.
@@ -274,5 +283,5 @@ int64 TrainNnetSimple(const NnetSimpleTrainerConfig &config,
   return num_egs_processed;
 }
 
-} // namespace ctc
-} // namespace kaldi
+}  // namespace ctc
+}  // namespace kaldi
