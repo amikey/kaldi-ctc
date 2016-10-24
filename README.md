@@ -44,7 +44,7 @@ bash run.sh --stage -2 --num-gpus 4(change to your GPU devices amount)
 ```
 steps/ctc/report/generate_plots.py exp/ctc/cudnn_google_fs3 reports/ctc-google
 ```
-<img src="./egs/librispeech/ctc/reports/ctc-google/accuracy.png" width="500">
+<img src="./egs/librispeech/ctc/reports/ctc-google/accuracy.jpg" width="500">
 
 ### WER RESULITS (LM tgsmall)
 | Models | Real Time Factor(RTF) | test_clean | dev_clean | test_other | dev_other |
