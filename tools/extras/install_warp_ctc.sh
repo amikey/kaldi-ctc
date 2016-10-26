@@ -5,7 +5,7 @@
    echo "cmake is not installed, this will not work.  Ask your sysadmin to install it" && exit 1;
 
 if [ ! -d warp-ctc ];then
-	git clone git@github.com:lifeiteng/warp-ctc.git || exit 1
+	git clone https://github.com/lifeiteng/warp-ctc.git || exit 1
 fi
 
 cd warp-ctc; git pull
