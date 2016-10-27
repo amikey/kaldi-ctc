@@ -53,13 +53,14 @@ steps/ctc/report/generate_plots.py exp/ctc/cudnn_google_fs3 reports/ctc-google
 | CTC-monophone    | (0.05 ~ 0.06) / `frame_subsampling_factor` |  8.63 | 9.02 | 20.75 |  22.16 |
 | CTC-character    |  |
 
-
 * There are many Out Of Vocabularies(OOVs) in training transcriptions now
 
 ```
 awk 'FNR==NR{T[$1]=1;} FNR<NR{for(i=2;i<=NF;i++) {if (!($i in T)) print $i;}}' data/lang_nosp/words.txt   data/train_960/text | sort -u | wc -l
 14291
 ```
+
+* CTC system gets better results than chain system on a larger corpu.
 
 
 # TODO
