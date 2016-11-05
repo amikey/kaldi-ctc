@@ -38,58 +38,41 @@ void ShiftPhonesAndAddBlanks(fst::StdVectorFst *fst,
     blank_loop_arc.weight = fst::StdArc::Weight::One();
 
     int32 num_states = fst->NumStates();
-    fst::StdArc epsilon_loop_arc(0, 0, fst::StdArc::Weight::One(), 0);
+    fst::StdArc epsilon_blank_arc(0, 0, fst::StdArc::Weight::One(), 0);
     for (int32 state = 0; state < num_states; state++) {
-      int32 num_arcs = fst->NumArcs(state);
       std::vector<fst::StdArc> self_loop_arcs;
-      std::vector<fst::StdArc> epsilon_arcs;
-
       for (IterType aiter(fst, state); !aiter.Done(); aiter.Next()) {
         fst::StdArc arc(aiter.Value());
         if (arc.ilabel != 0) {
           arc.ilabel++;
           aiter.SetValue(arc);
-        } else {
-          epsilon_arcs.push_back(arc);
         }
+
         if (arc.nextstate == state) {  // self-loop
           KALDI_ASSERT(arc.ilabel != 0);
           self_loop_arcs.push_back(arc);
         }
       }
 
-      {
-        if (self_loop_arcs.size() + epsilon_arcs.size() < num_arcs) {
-          int32 new_state = fst->AddState();
-          for (IterType aiter(fst, state); !aiter.Done(); aiter.Next()) {
-            fst::StdArc arc(aiter.Value());
-            if (arc.nextstate != state && arc.ilabel != 0)
-              fst->AddArc(new_state, arc);
-          }
+      int32 new_state = fst->AddState();
+      // move state.arcs to new_state
+      for (IterType aiter(fst, state); !aiter.Done(); aiter.Next()) {
+        fst::StdArc arc(aiter.Value());
+        if (arc.nextstate != state)
+          fst->AddArc(new_state, arc);
+      }
+      fst->DeleteArcs(state);
 
-          fst->DeleteArcs(state);
-          epsilon_loop_arc.nextstate = new_state;
-          fst->AddArc(state, epsilon_loop_arc);
+      // connect state -> new_state
+      epsilon_blank_arc.nextstate = new_state;
+      fst->AddArc(state, epsilon_blank_arc);
+      // add blank loop arc
+      blank_loop_arc.nextstate = new_state;
+      fst->AddArc(new_state, blank_loop_arc);
 
-          blank_loop_arc.nextstate = new_state;
-          fst->AddArc(new_state, blank_loop_arc);
-        } else {
-          fst->DeleteArcs(state);
-        }
-        // add self loop arcs
-        for (int32 k = 0; k < self_loop_arcs.size(); ++k) {
-          fst->AddArc(state, self_loop_arcs[k]);
-        }
-        // add eps arcs, need remove redundances
-        for (int32 k = 0; k < epsilon_arcs.size(); ++k) {
-          int32 new_state = fst->AddState();
-          epsilon_loop_arc.nextstate = epsilon_arcs[k].nextstate;
-          fst->AddArc(new_state, epsilon_loop_arc);
-          blank_loop_arc.nextstate = new_state;
-          fst->AddArc(new_state, blank_loop_arc);
-          epsilon_arcs[k].nextstate = new_state;
-          fst->AddArc(state, epsilon_arcs[k]);
-        }
+      // add self loop arcs to state
+      for (int32 k = 0; k < self_loop_arcs.size(); ++k) {
+        fst->AddArc(state, self_loop_arcs[k]);
       }
     }
   } else {
