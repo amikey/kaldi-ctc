@@ -147,7 +147,7 @@ if ! [ $(head -c 67 $dir/HCLG.fst | wc -c) -eq 67 ]; then
 fi
 
 if $ctc;then
-  ctc-make-decoding-graph --add-phone-loop=false $dir/HCLG.fst - | fstminimizeencoded >$dir/CTC.fst || exit 1;
+  ctc-make-decoding-graph $dir/HCLG.fst - | fstminimizeencoded >$dir/CTC.fst || exit 1;
 fi
 
 # save space.

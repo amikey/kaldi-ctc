@@ -38,11 +38,7 @@ int main(int argc, char *argv[]) {
       "E.g:  fstrmsymbols data/lang/phones/disambig.int LG.fst | \\\n"
       "         ctc-make-decoding-graph - CTC.fst\n";
 
-    bool add_phone_loop = false;
     ParseOptions po(usage);
-    po.Register("add-phone-loop", &add_phone_loop,
-                "Add phone loop in CTC decoding graph.");
-
     po.Read(argc, argv);
 
     if (po.NumArgs() != 2) {
@@ -55,7 +51,7 @@ int main(int argc, char *argv[]) {
 
     VectorFst<StdArc> *fst = ReadFstKaldi(fst_rxfilename);
 
-    ctc::ShiftPhonesAndAddBlanks(fst, add_phone_loop);
+    ctc::ShiftTransitionIdAndAddBlanks(fst);
 
     WriteFstKaldi(*fst, fst_wxfilename);
 

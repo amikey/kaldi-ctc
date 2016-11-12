@@ -27,95 +27,50 @@
 namespace kaldi {
 namespace ctc {
 
-void ShiftPhonesAndAddBlanks(fst::StdVectorFst *fst,
-                             bool add_phone_loop) {
+void ShiftTransitionIdAndAddBlanks(fst::StdVectorFst *fst) {
   typedef fst::MutableArcIterator<fst::StdVectorFst > IterType;
 
-  if (!add_phone_loop) {
-    fst::StdArc blank_loop_arc;
-    blank_loop_arc.ilabel = 1;  // blank plus one.
-    blank_loop_arc.olabel = 0;  // epsilon
-    blank_loop_arc.weight = fst::StdArc::Weight::One();
+  fst::StdArc blank_loop_arc;
+  blank_loop_arc.ilabel = 1;  // blank plus one.
+  blank_loop_arc.olabel = 0;  // epsilon
+  blank_loop_arc.weight = fst::StdArc::Weight::One();
 
-    int32 num_states = fst->NumStates();
-    fst::StdArc epsilon_blank_arc(0, 0, fst::StdArc::Weight::One(), 0);
-    for (int32 state = 0; state < num_states; state++) {
-      std::vector<fst::StdArc> self_loop_arcs;
-      for (IterType aiter(fst, state); !aiter.Done(); aiter.Next()) {
-        fst::StdArc arc(aiter.Value());
-        if (arc.ilabel != 0) {
-          arc.ilabel++;
-          aiter.SetValue(arc);
-        }
-
-        if (arc.nextstate == state) {  // self-loop
-          KALDI_ASSERT(arc.ilabel != 0);
-          self_loop_arcs.push_back(arc);
-        }
+  int32 num_states = fst->NumStates();
+  fst::StdArc epsilon_blank_arc(0, 0, fst::StdArc::Weight::One(), 0);
+  for (int32 state = 0; state < num_states; state++) {
+    std::vector<fst::StdArc> self_loop_arcs;
+    for (IterType aiter(fst, state); !aiter.Done(); aiter.Next()) {
+      fst::StdArc arc(aiter.Value());
+      if (arc.ilabel != 0) {
+        arc.ilabel++;
+        aiter.SetValue(arc);
       }
 
-      int32 new_state = fst->AddState();
-      // move state.arcs to new_state
-      for (IterType aiter(fst, state); !aiter.Done(); aiter.Next()) {
-        fst::StdArc arc(aiter.Value());
-        if (arc.nextstate != state)
-          fst->AddArc(new_state, arc);
-      }
-      fst->DeleteArcs(state);
-
-      // connect state -> new_state
-      epsilon_blank_arc.nextstate = new_state;
-      fst->AddArc(state, epsilon_blank_arc);
-      // add blank loop arc
-      blank_loop_arc.nextstate = new_state;
-      fst->AddArc(new_state, blank_loop_arc);
-
-      // add self loop arcs to state
-      for (int32 k = 0; k < self_loop_arcs.size(); ++k) {
-        fst->AddArc(state, self_loop_arcs[k]);
+      if (arc.nextstate == state) {  // self-loop
+        KALDI_ASSERT(arc.ilabel != 0);
+        self_loop_arcs.push_back(arc);
       }
     }
-  } else {
-    KALDI_WARN << "Older verison, not recommended.";
-    fst::StdArc self_loop_arc;
-    self_loop_arc.ilabel = 1;  // blank plus one.
-    self_loop_arc.olabel = 0;  // epsilon
-    self_loop_arc.weight = fst::StdArc::Weight::One();
 
-    int32 num_states = fst->NumStates();
-
-    for (int32 state = 0; state < num_states; state++) {
-      for (IterType aiter(fst, state); !aiter.Done(); aiter.Next()) {
-        fst::StdArc arc(aiter.Value());
-        if (arc.ilabel != 0) {
-          arc.ilabel++;
-          aiter.SetValue(arc);
-        }
-      }
-      self_loop_arc.nextstate = state;
-      fst->AddArc(state, self_loop_arc);
+    int32 new_state = fst->AddState();
+    // move state.arcs to new_state
+    for (IterType aiter(fst, state); !aiter.Done(); aiter.Next()) {
+      fst::StdArc arc(aiter.Value());
+      if (arc.nextstate != state)
+        fst->AddArc(new_state, arc);
     }
+    fst->DeleteArcs(state);
 
-    fst::StdArc epsilon_loop_arc(0, 0, fst::StdArc::Weight::One(), 0);
-    for (int32 state = 0; state < num_states; state++) {
-      for (IterType aiter(fst, state); !aiter.Done(); aiter.Next()) {
-        fst::StdArc arc(aiter.Value());
-        if (arc.ilabel > 1) {  // phone id
-          int32 new_state = fst->AddState();
-          int32 next_state = arc.nextstate;
-          arc.nextstate = new_state;
-          aiter.SetValue(arc);
+    // connect state -> new_state
+    epsilon_blank_arc.nextstate = new_state;
+    fst->AddArc(state, epsilon_blank_arc);
+    // add blank loop arc
+    blank_loop_arc.nextstate = new_state;
+    fst->AddArc(new_state, blank_loop_arc);
 
-          // add phone loop
-          fst->AddArc(new_state, fst::StdArc(arc.ilabel, 0,
-                                             fst::StdArc::Weight::One(),
-                                             new_state));
-
-          // add epsilon arc
-          epsilon_loop_arc.nextstate = next_state;
-          fst->AddArc(new_state, epsilon_loop_arc);
-        }
-      }
+    // add self loop arcs to state
+    for (int32 k = 0; k < self_loop_arcs.size(); ++k) {
+      fst->AddArc(state, self_loop_arcs[k]);
     }
   }
 }

@@ -36,25 +36,10 @@ namespace kaldi {
 namespace ctc {
 
 
-/**  This function adds one to all the phones to the FST and adds self-loops
+/**  This function adds one to all the trainsition id to the FST and adds self-loops
      for the the optional blank symbols to all of its states.
-     @param [in,out]          The FST we modify.  At entry, the symbols on its input side
-                              must be phones in the range [1, num_phones]
-                              the output-side symbols will be left as they are.
-                              If this represents a decoding graph you'll probably
-                              want to have determinized this with disambiguation symbols
-                              in place, then removed the disambiguation symbols and minimized
-                              it.
-
-                              What this function does is to add 1 to all nonzero
-                              input symbols on arcs (to convert phones to
-                              phones-plus-one), then at each state of the
-                              modified FST, add a self-loop with a 1
-                              (blank-plus-one) on the input and 0 (epsilon) on
-                              the output.
 */
-void ShiftPhonesAndAddBlanks(fst::StdVectorFst *fst,
-                             bool add_phone_loop = false);
+void ShiftTransitionIdAndAddBlanks(fst::StdVectorFst *fst);
 
 /** This is a Debug function
 */
