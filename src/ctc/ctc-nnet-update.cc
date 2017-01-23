@@ -197,8 +197,15 @@ bool NnetCtcUpdater::ComputeObjfAndDeriv(
                  label_lengths.begin(),
                  label_lengths.end(), 0));
 
+// older warpctc version
+#ifdef ctcComputeInfo
   ctcComputeInfo info;
+#else
+  ctcOptions info;
+  info.blank_label = 0;
+#endif
   info.loc = CTC_GPU;
+
   CU_SAFE_CALL(cudaStreamCreate(&(info.stream)));
   size_t gpu_alloc_bytes;
   WARPCTC_SAFE_CALL(get_workspace_size(label_lengths.data(),

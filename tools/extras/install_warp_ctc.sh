@@ -10,6 +10,5 @@ fi
 
 cd warp-ctc; git pull
 mkdir -p build; cd build; cmake ../; make -j1 || exit 1
-./test_cpu || exit 1;
-./test_gpu || exit 1;
+
 cd ../../
