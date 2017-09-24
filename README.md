@@ -20,9 +20,10 @@ cd tools
 make -j
 make openblas
 # Install cudnn, reference script `extras/install_cudnn.sh`
-bash extras/install_cudnn.sh
+bash extras/install_cudnn.sh  # just download cudnn, copy include/lib[64] dirs to system's CUDA path yourself.
 
 cd ../src
+# change `YOUR_CUDNN_ROOT`
 ./configure --cudnn-root=YOUR_CUDNN_ROOT --openblas-root=../tools/OpenBLAS/install
 make depend -j
 make -j
