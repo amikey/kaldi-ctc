@@ -10,7 +10,7 @@ kaldi-ctc is based on [kaldi](https://github.com/kaldi-asr/kaldi), [warp-ctc](ht
 | -----------|:-------------:|
 | kaldi      | Parent body, data prepare / build decoding WFST  |
 | warp-ctc   | Fast parallel implementation of CTC  |
-| cudnn(>=5.0)|Fast recurrent neural networks(LSTM,GRU,ReLU,Tanh)  |
+| cudnn(=5.x)|Fast recurrent neural networks(LSTM,GRU,ReLU,Tanh)  |
 
 # Compilation
 
