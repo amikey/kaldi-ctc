@@ -23,7 +23,7 @@ make openblas
 bash extras/install_cudnn.sh
 
 cd ../src
-./configure --cudnn-root=CUDNN_ROOT --openblas-root=../tools/OpenBLAS/install
+./configure --cudnn-root=YOUR_CUDNN_ROOT --openblas-root=../tools/OpenBLAS/install
 make depend -j
 make -j
 ```
